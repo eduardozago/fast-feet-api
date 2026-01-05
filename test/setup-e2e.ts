@@ -23,10 +23,8 @@ function generateUniqueDatabaseURL(schemaId: string) {
 beforeAll(() => {
   const databaseUrl = generateUniqueDatabaseURL(schemaId)
 
-  process.env.DATABASE_URL = databaseUrl
-
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseUrl,
   })
 
   prisma = new PrismaClient({ adapter })
