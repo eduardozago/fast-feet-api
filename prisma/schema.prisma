@@ -12,3 +12,21 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum AccountRole {
+  ADMIN  @map("admin")
+  WORKER @map("worker")
+
+  @@map("account_role")
+}
+
+model Account {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  role      AccountRole
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime?   @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
