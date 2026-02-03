@@ -3,6 +3,8 @@ import { HashGenerator } from '@/domain/identity/application/cryptography/hash-g
 import { Argon2HashGenerator } from './argon2-hash-generator'
 import { HashChecker } from '@/domain/identity/application/cryptography/hash-checker'
 import { Argon2HashChecker } from './argon2-hash-checker'
+import { Encrypter } from '@/domain/identity/application/cryptography/encrypter'
+import { JwtEncrypter } from './jwt-encrypter'
 
 @Module({
   providers: [
@@ -14,7 +16,11 @@ import { Argon2HashChecker } from './argon2-hash-checker'
       provide: HashChecker,
       useClass: Argon2HashChecker,
     },
+    {
+      provide: Encrypter,
+      useClass: JwtEncrypter,
+    },
   ],
-  exports: [HashGenerator, HashChecker],
+  exports: [HashGenerator, HashChecker, Encrypter],
 })
 export class CryptographyModule {}
