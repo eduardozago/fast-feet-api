@@ -6,6 +6,7 @@ import { AccountsRepository } from '../repositories/accounts-repository'
 import { Either, left, right } from '@/core/either'
 import { HashGenerator } from '../cryptography/hash-generator'
 import { AccountAlreadyExistsError } from './errors/account-already-exists-error'
+import { Injectable } from '@nestjs/common'
 
 interface CreateAccountUseCaseRequest {
   email: string
@@ -20,6 +21,7 @@ export type CreateAccountUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class CreateAccountUseCase {
   constructor(
     private accountsRepository: AccountsRepository,
