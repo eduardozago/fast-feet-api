@@ -49,7 +49,7 @@ describe('Create Account', () => {
     expect(result.value).toBeInstanceOf(AccountAlreadyExistsError)
   })
 
-  it('should not be able to hash password', async () => {
+  it('should be able to hash password', async () => {
     const result = await sut.execute({
       email: 'john@example.com',
       password: '123456',
