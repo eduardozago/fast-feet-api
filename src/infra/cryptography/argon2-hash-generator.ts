@@ -10,7 +10,7 @@ export class Argon2HashGenerator implements HashGenerator {
   }
 
   async hash(plainText: string): Promise<string> {
-    const passwordHashed = argon2.hash(plainText, this.options)
+    const passwordHashed = await argon2.hash(plainText, this.options)
 
     return passwordHashed
   }
