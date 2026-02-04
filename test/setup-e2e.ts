@@ -5,31 +5,38 @@ import { execSync } from 'node:child_process'
 
 import { randomUUID } from 'node:crypto'
 
-let prisma: PrismaClient
-const schemaId = randomUUID()
+export const schemaId = randomUUID()
 
-function generateUniqueDatabaseURL(schemaId: string) {
+let prisma: PrismaClient
+
+export function createTestAdapter() {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is not defined')
   }
 
-  const url = new URL(process.env.DATABASE_URL)
-
-  url.searchParams.set('schema', schemaId)
-
-  return url.toString()
+  return new PrismaPg(
+    {
+      connectionString: process.env.DATABASE_URL,
+    },
+    {
+      schema: schemaId,
+    },
+  )
 }
 
-beforeAll(() => {
-  const databaseUrl = generateUniqueDatabaseURL(schemaId)
-
-  const adapter = new PrismaPg({
-    connectionString: databaseUrl,
-  })
+beforeAll(async () => {
+  const adapter = createTestAdapter()
 
   prisma = new PrismaClient({ adapter })
 
-  execSync('pnpm prisma migrate deploy')
+  await prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaId}"`)
+
+  execSync('pnpm prisma db push', {
+    env: {
+      ...process.env,
+      DATABASE_URL: `${process.env.DATABASE_URL}?schema=${schemaId}`,
+    },
+  })
 })
 
 afterAll(async () => {
