@@ -4,6 +4,7 @@ import { HashChecker } from '../cryptography/hash-checker'
 import { InvalidCredentialsError } from './errors/invalid-credentials-error'
 import { HashGenerator } from '../cryptography/hash-generator'
 import { Account } from '../../enterprise/entities/account'
+import { Injectable } from '@nestjs/common'
 
 interface ChangePasswordUseCaseRequest {
   email: string
@@ -18,6 +19,7 @@ export type ChangePasswordUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class ChangePasswordUseCase {
   constructor(
     private accountsRepository: AccountsRepository,
