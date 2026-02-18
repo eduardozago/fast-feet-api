@@ -35,7 +35,7 @@ describe('Change Password (E2E)', () => {
     await app.init()
   })
 
-  test('[POST] /sessions', async () => {
+  test('[POST] /change-password', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       password: await argon2.hash('12345678'),
