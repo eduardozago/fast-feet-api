@@ -38,6 +38,10 @@ export class Account extends Entity<AccountProps> {
     return this.props.updatedAt
   }
 
+  set password(password: string) {
+    this.props.password = password
+  }
+
   static create(
     props: Optional<AccountProps, 'createdAt'>,
     id?: UniqueEntityID,
