@@ -6,6 +6,7 @@ import { EnvService } from '../env/env.service'
 
 const userSchema = z.object({
   sub: z.string().uuid(),
+  role: z.enum(['ADMIN', 'WORKER']),
 })
 
 export type UserPayload = z.infer<typeof userSchema>
