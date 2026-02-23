@@ -1,7 +1,10 @@
 import { AppModule } from '@/app.module'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
-import { INestApplication } from '@nestjs/common'
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import * as argon2 from 'argon2'
 import request from 'supertest'
@@ -9,7 +12,7 @@ import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Authenticate (E2E)', () => {
-  let app: INestApplication
+  let app: NestFastifyApplication
   let accountFactory: AccountFactory
 
   beforeAll(async () => {
@@ -21,11 +24,14 @@ describe('Authenticate (E2E)', () => {
       .useClass(PrismaServiceE2E)
       .compile()
 
-    app = moduleRef.createNestApplication()
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    )
 
     accountFactory = moduleRef.get(AccountFactory)
 
     await app.init()
+    await app.getHttpAdapter().getInstance().ready()
   })
 
   test('[POST] /sessions', async () => {

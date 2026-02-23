@@ -3,6 +3,10 @@ import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import * as argon2 from 'argon2'
 import request from 'supertest'
@@ -10,7 +14,7 @@ import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Change Password (E2E)', () => {
-  let app: INestApplication
+  let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
   let jwt: JwtService
@@ -24,7 +28,9 @@ describe('Change Password (E2E)', () => {
       .useClass(PrismaServiceE2E)
       .compile()
 
-    app = moduleRef.createNestApplication()
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    )
 
     prisma = moduleRef.get(PrismaService)
 
@@ -33,6 +39,7 @@ describe('Change Password (E2E)', () => {
     accountFactory = moduleRef.get(AccountFactory)
 
     await app.init()
+    await app.getHttpAdapter().getInstance().ready()
   })
 
   test('[POST] /change-password', async () => {
@@ -43,6 +50,7 @@ describe('Change Password (E2E)', () => {
 
     const accessToken = jwt.sign({
       sub: account.id.toString(),
+      role: 'ADMIN',
     })
 
     const response = await request(app.getHttpServer())
@@ -53,6 +61,8 @@ describe('Change Password (E2E)', () => {
         password: '12345678',
         newPassword: '87654321',
       })
+
+    console.log(response.body)
 
     expect(response.statusCode).toBe(201)
 

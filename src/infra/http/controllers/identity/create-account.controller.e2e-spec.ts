@@ -1,12 +1,15 @@
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
-import { INestApplication } from '@nestjs/common'
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Create account (E2E)', () => {
-  let app: INestApplication
+  let app: NestFastifyApplication
   let prisma: PrismaService
 
   beforeAll(async () => {
@@ -17,11 +20,14 @@ describe('Create account (E2E)', () => {
       .useClass(PrismaServiceE2E)
       .compile()
 
-    app = moduleRef.createNestApplication()
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    )
 
     prisma = moduleRef.get(PrismaService)
 
     await app.init()
+    await app.getHttpAdapter().getInstance().ready()
   })
 
   test('[POST] /accounts', async () => {
