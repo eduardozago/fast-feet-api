@@ -36,7 +36,7 @@ export class PrismaAccountMapper {
 
   private static toDomainRoleMap: Record<PrismaAccountRole, AccountRole> = {
     [PrismaAccountRole.ADMIN]: AccountRole.ADMIN,
-    [PrismaAccountRole.WORKER]: AccountRole.ADMIN,
+    [PrismaAccountRole.WORKER]: AccountRole.WORKER,
   }
 
   private static toPrismaRoleMap: Record<string, PrismaAccountRole> = {
