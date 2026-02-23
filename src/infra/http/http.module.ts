@@ -7,9 +7,10 @@ import { AuthenticateController } from './controllers/identity/authenticate.cont
 import { AuthenticateUseCase } from '@/domain/identity/application/use-cases/authenticate'
 import { ChangePasswordController } from './controllers/identity/change-password.controller'
 import { ChangePasswordUseCase } from '@/domain/identity/application/use-cases/change-password'
+import { GatewaysModule } from '../gateways/gateways.module'
 
 @Module({
-  imports: [DatabaseModule, CryptographyModule],
+  imports: [DatabaseModule, CryptographyModule, GatewaysModule],
   controllers: [
     CreateAccountController,
     AuthenticateController,
