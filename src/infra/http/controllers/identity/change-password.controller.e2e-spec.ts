@@ -62,8 +62,6 @@ describe('Change Password (E2E)', () => {
         newPassword: '87654321',
       })
 
-    console.log(response.body)
-
     expect(response.statusCode).toBe(201)
 
     const accountOnDatabase = await prisma.account.findUnique({
