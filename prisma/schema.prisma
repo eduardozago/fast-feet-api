@@ -13,6 +13,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// Identity
+
 enum AccountRole {
   ADMIN  @map("admin")
   WORKER @map("worker")
@@ -29,4 +31,16 @@ model Account {
   updatedAt DateTime?   @updatedAt @map("updated_at")
 
   @@map("accounts")
+}
+
+// Delivery
+
+model Courier {
+  id        String    @id @default(uuid())
+  accountId String    @unique @map("account_id")
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("couriers")
 }

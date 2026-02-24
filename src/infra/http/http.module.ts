@@ -7,14 +7,27 @@ import { AuthenticateController } from './controllers/identity/authenticate.cont
 import { AuthenticateUseCase } from '@/domain/identity/application/use-cases/authenticate'
 import { ChangePasswordController } from './controllers/identity/change-password.controller'
 import { ChangePasswordUseCase } from '@/domain/identity/application/use-cases/change-password'
+import { GatewaysModule } from '../gateways/gateways.module'
+import { RegisterCourierController } from './controllers/delivery/courier/register-courier.controller'
+import { RegisterCourierUseCase } from '@/domain/delivery/application/use-cases/courier/register-courier'
 
 @Module({
-  imports: [DatabaseModule, CryptographyModule],
+  imports: [DatabaseModule, CryptographyModule, GatewaysModule],
   controllers: [
+    // Identity
     CreateAccountController,
     AuthenticateController,
     ChangePasswordController,
+    // Delivery
+    RegisterCourierController,
   ],
-  providers: [CreateAccountUseCase, AuthenticateUseCase, ChangePasswordUseCase],
+  providers: [
+    // Identity
+    CreateAccountUseCase,
+    AuthenticateUseCase,
+    ChangePasswordUseCase,
+    // Delivery
+    RegisterCourierUseCase,
+  ],
 })
 export class HttpModule {}
