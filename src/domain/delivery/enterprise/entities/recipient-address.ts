@@ -33,7 +33,7 @@ export class RecipientAddress extends Entity<RecipientAddressProps> {
     return this.props.neighborhood
   }
 
-  get complement() {
+  get complement(): string | null | undefined {
     return this.props.complement
   }
 
@@ -59,6 +59,38 @@ export class RecipientAddress extends Entity<RecipientAddressProps> {
 
   get updatedAt() {
     return this.props.updatedAt
+  }
+
+  set street(street: string) {
+    this.props.street = street
+  }
+
+  set number(number: string) {
+    this.props.number = number
+  }
+
+  set neighborhood(neighborhood: string) {
+    this.props.neighborhood = neighborhood
+  }
+
+  set complement(complement: string | undefined) {
+    this.props.complement = complement
+  }
+
+  set city(city: string) {
+    this.props.city = city
+  }
+
+  set state(state: string) {
+    this.props.state = state
+  }
+
+  set country(country: string) {
+    this.props.country = country
+  }
+
+  set postalCode(postalCode: string) {
+    this.props.postalCode = postalCode
   }
 
   static create(
