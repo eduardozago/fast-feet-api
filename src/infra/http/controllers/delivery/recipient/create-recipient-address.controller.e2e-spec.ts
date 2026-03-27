@@ -76,8 +76,6 @@ describe('Create Recipient Address (E2E)', () => {
         postalCode: address.postalCode,
       })
 
-    console.log(response.body)
-
     expect(response.statusCode).toBe(201)
 
     const recipientOnDatabase = await prisma.recipientAddress.findFirst({
