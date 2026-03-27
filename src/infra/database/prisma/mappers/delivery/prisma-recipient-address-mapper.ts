@@ -9,7 +9,7 @@ export class PrismaRecipientAddressMapper {
   static toDomain(raw: PrismaRecipientAddress) {
     return RecipientAddress.create(
       {
-        recipientId: new UniqueEntityID(raw.id),
+        recipientId: new UniqueEntityID(raw.recipientId),
         street: raw.street,
         number: raw.number,
         neighborhood: raw.neighborhood,
