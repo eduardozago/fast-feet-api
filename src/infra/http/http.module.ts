@@ -10,6 +10,16 @@ import { ChangePasswordUseCase } from '@/domain/identity/application/use-cases/c
 import { GatewaysModule } from '../gateways/gateways.module'
 import { RegisterCourierController } from './controllers/delivery/courier/register-courier.controller'
 import { RegisterCourierUseCase } from '@/domain/delivery/application/use-cases/courier/register-courier'
+import { CreateRecipientUseCase } from '@/domain/delivery/application/use-cases/recipient/create-recipient'
+import { CreateRecipientController } from './controllers/delivery/recipient/create-recipient.controller'
+import { CreateRecipientAddressController } from './controllers/delivery/recipient/create-recipient-address.controller'
+import { CreateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/create-recipient-address'
+import { FetchRecipientAddressesController } from './controllers/delivery/recipient/fetch-recipient-addresses.controller'
+import { FetchRecipientAddressesUseCase } from '@/domain/delivery/application/use-cases/recipient/fetch-recipient-addresses'
+import { UpdateRecipientAddressController } from './controllers/delivery/recipient/update-recipient-address.controller'
+import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/update-recipient-address'
+import { DeleteRecipientAddressController } from './controllers/delivery/recipient/delete-recipient-address.controller'
+import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/delete-recipient-address'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule],
@@ -20,6 +30,11 @@ import { RegisterCourierUseCase } from '@/domain/delivery/application/use-cases/
     ChangePasswordController,
     // Delivery
     RegisterCourierController,
+    CreateRecipientController,
+    CreateRecipientAddressController,
+    FetchRecipientAddressesController,
+    UpdateRecipientAddressController,
+    DeleteRecipientAddressController,
   ],
   providers: [
     // Identity
@@ -28,6 +43,11 @@ import { RegisterCourierUseCase } from '@/domain/delivery/application/use-cases/
     ChangePasswordUseCase,
     // Delivery
     RegisterCourierUseCase,
+    CreateRecipientUseCase,
+    CreateRecipientAddressUseCase,
+    FetchRecipientAddressesUseCase,
+    UpdateRecipientAddressUseCase,
+    DeleteRecipientAddressUseCase,
   ],
 })
 export class HttpModule {}

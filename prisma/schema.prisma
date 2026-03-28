@@ -44,3 +44,46 @@ model Courier {
 
   @@map("couriers")
 }
+
+enum IdentificationType {
+  PERSONAL_ID @map("personal_id")
+  TAX_ID      @map("tax_id")
+  PASSPORT    @map("passport")
+  COMPANY_ID  @map("company_id")
+  OTHER       @map("other")
+
+  @@map("identification_type")
+}
+
+model Recipient {
+  id                     String             @id @default(uuid())
+  name                   String
+  identityDocumentType   IdentificationType @map("identity_document_type")
+  identityDocumentNumber String             @map("identity_document_number")
+  identityIssuingCountry String             @map("identity_issuing_country")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime?          @updatedAt @map("updated_at")
+
+  addresses RecipientAddress[]
+
+  @@map("recipients")
+}
+
+model RecipientAddress {
+  id           String    @id @default(uuid())
+  recipientId  String    @map("recipient_id")
+  street       String
+  number       String
+  neighborhood String
+  complement   String?
+  city         String
+  state        String
+  country      String
+  postalCode   String    @map("postal_code")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  recipient Recipient @relation(fields: [recipientId], references: [id])
+
+  @@map("recipient_addresses")
+}
