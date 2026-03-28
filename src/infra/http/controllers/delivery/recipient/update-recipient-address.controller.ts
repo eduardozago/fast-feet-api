@@ -9,8 +9,8 @@ import {
 import z from 'zod'
 import { ZodValidationPipe } from '../../../pipes/zod-validation-pipe'
 import { Roles } from '@/infra/auth/roles.decorator'
-import { RecipientNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-not-found-error'
 import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/update-recipient-address'
+import { RecipientAddressNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-address-not-found-error'
 
 const updateRecipientAddressBodySchema = z.object({
   street: z.string(),
@@ -67,7 +67,7 @@ export class UpdateRecipientAddressController {
       const error = result.value
 
       switch (error.constructor) {
-        case RecipientNotFoundError:
+        case RecipientAddressNotFoundError:
           throw new NotFoundException(error.message)
         default:
           throw new BadRequestException(error.message)
