@@ -18,6 +18,8 @@ import { FetchRecipientAddressesController } from './controllers/delivery/recipi
 import { FetchRecipientAddressesUseCase } from '@/domain/delivery/application/use-cases/recipient/fetch-recipient-addresses'
 import { UpdateRecipientAddressController } from './controllers/delivery/recipient/update-recipient-address.controller'
 import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/update-recipient-address'
+import { DeleteRecipientAddressController } from './controllers/delivery/recipient/delete-recipient-address.controller'
+import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/delete-recipient-address'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule],
@@ -32,6 +34,7 @@ import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use
     CreateRecipientAddressController,
     FetchRecipientAddressesController,
     UpdateRecipientAddressController,
+    DeleteRecipientAddressController,
   ],
   providers: [
     // Identity
@@ -44,6 +47,7 @@ import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use
     CreateRecipientAddressUseCase,
     FetchRecipientAddressesUseCase,
     UpdateRecipientAddressUseCase,
+    DeleteRecipientAddressUseCase,
   ],
 })
 export class HttpModule {}
