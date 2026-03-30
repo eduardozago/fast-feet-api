@@ -6,7 +6,7 @@ export const DeliveryStatus = {
   CREATED: 'CREATED',
   WAITING_PICKUP: 'WAITING_PICKUP',
   IN_TRANSIT: 'IN_TRANSIT',
-  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
 } as const
 
 export type DeliveryStatus =
@@ -44,6 +44,25 @@ export class Delivery extends Entity<DeliveryProps> {
 
   get updateAt() {
     return this.props.updatedAt
+  }
+
+  private touch() {
+    this.props.updatedAt = new Date()
+  }
+
+  waitForPickup() {
+    this.props.status = DeliveryStatus.WAITING_PICKUP
+    this.touch()
+  }
+
+  inTransit() {
+    this.props.status = DeliveryStatus.IN_TRANSIT
+    this.touch()
+  }
+
+  completed() {
+    this.props.status = DeliveryStatus.COMPLETED
+    this.touch()
   }
 
   static create(
