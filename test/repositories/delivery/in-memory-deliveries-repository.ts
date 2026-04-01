@@ -1,3 +1,4 @@
+import { PaginationParams } from '@/core/core/pagination-params'
 import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
 import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 
@@ -12,6 +13,12 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     }
 
     return Promise.resolve(delivery)
+  }
+
+  findMany({ page, limit }: PaginationParams): Promise<Delivery[]> {
+    const deliveries = this.items.slice((page - 1) * limit, page * limit)
+
+    return Promise.resolve(deliveries)
   }
 
   create(delivery: Delivery): Promise<void> {
