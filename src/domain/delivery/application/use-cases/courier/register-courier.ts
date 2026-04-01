@@ -5,6 +5,7 @@ import { CouriersRepository } from '../../repositories/couriers-repository'
 import { IdentityGateway } from '../../gateways/identity-gateway'
 import { AccountNotFoundError } from './errors/account-not-found-error'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { AccountRole } from '@/domain/delivery/enterprise/entities/value-objects/account-role'
 
 interface RegisterCourierUseCaseRequest {
   accountId: string
@@ -29,9 +30,9 @@ export class RegisterCourierUseCase {
     accountId,
     name,
   }: RegisterCourierUseCaseRequest): Promise<RegisterCourierUseCaseResponse> {
-    const account = await this.identityGateway.findWorkerById(accountId)
+    const account = await this.identityGateway.getAccount(accountId)
 
-    if (!account) {
+    if (!account || account.role !== AccountRole.WORKER) {
       return left(new AccountNotFoundError())
     }
 
