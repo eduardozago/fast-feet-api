@@ -55,8 +55,9 @@ export class Delivery extends Entity<DeliveryProps> {
     this.touch()
   }
 
-  inTransit() {
+  inTransit(courierId: UniqueEntityID) {
     this.props.status = DeliveryStatus.IN_TRANSIT
+    this.props.courierId = courierId
     this.touch()
   }
 
