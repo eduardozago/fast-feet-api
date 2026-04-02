@@ -38,4 +38,16 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
 
     return Promise.resolve()
   }
+
+  delete(delivery: Delivery): Promise<void> {
+    const index = this.items.findIndex(
+      (item) => item.id.toString() === delivery.id.toString(),
+    )
+
+    if (index !== -1) {
+      this.items.splice(index, 1)
+    }
+
+    return Promise.resolve()
+  }
 }
