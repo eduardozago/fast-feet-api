@@ -6,4 +6,5 @@ export abstract class DeliveriesRepository {
   abstract findMany(params: PaginationParams): Promise<Delivery[]>
   abstract create(delivery: Delivery): Promise<void>
   abstract update(delivery: Delivery): Promise<void>
+  abstract delete(delivery: Delivery): Promise<void>
 }
