@@ -42,6 +42,8 @@ model Courier {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  deliveries Delivery[]
+
   @@map("couriers")
 }
 
@@ -66,6 +68,8 @@ model Recipient {
 
   addresses RecipientAddress[]
 
+  deliveries Delivery[]
+
   @@map("recipients")
 }
 
@@ -83,7 +87,33 @@ model RecipientAddress {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime? @updatedAt @map("updated_at")
 
-  recipient Recipient @relation(fields: [recipientId], references: [id])
+  recipient  Recipient  @relation(fields: [recipientId], references: [id])
+  deliveries Delivery[]
 
   @@map("recipient_addresses")
+}
+
+enum DeliveryStatus {
+  CREATED        @map("created")
+  WAITING_PICKUP @map("waiting_pickup")
+  IN_TRANSIT     @map("in_transit")
+  COMPLETED      @map("completed")
+
+  @@map("delivery_status")
+}
+
+model Delivery {
+  id                 String         @id @default(uuid())
+  courierId          String?        @map("courier_id")
+  recipientId        String         @map("recipient_id")
+  recipientAddressId String         @map("recipient_address_id")
+  status             DeliveryStatus @default(CREATED)
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime?      @updatedAt @map("updated_at")
+
+  courier          Courier?         @relation(fields: [courierId], references: [id])
+  recipient        Recipient        @relation(fields: [recipientId], references: [id])
+  recipientAddress RecipientAddress @relation(fields: [recipientAddressId], references: [id])
+
+  @@map("deliveries")
 }
