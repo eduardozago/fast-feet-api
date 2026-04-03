@@ -42,7 +42,7 @@ export class Delivery extends Entity<DeliveryProps> {
     return this.props.createdAt
   }
 
-  get updateAt() {
+  get updatedAt() {
     return this.props.updatedAt
   }
 
