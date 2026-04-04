@@ -8,6 +8,8 @@ import { RecipientAddressesRepository } from '@/domain/delivery/application/repo
 import { PrismaRecipientAddressesRepository } from './prisma/repositories/delivery/prisma-recipient-addresses-repository'
 import { RecipientsRepository } from '@/domain/delivery/application/repositories/recipients-repository'
 import { PrismaRecipientsRepository } from './prisma/repositories/delivery/prisma-recipients-repository'
+import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
+import { PrismaDeliveriesRepository } from './prisma/repositories/delivery/prisma-deliveries-repository'
 
 @Module({
   providers: [
@@ -28,6 +30,10 @@ import { PrismaRecipientsRepository } from './prisma/repositories/delivery/prism
       provide: RecipientAddressesRepository,
       useClass: PrismaRecipientAddressesRepository,
     },
+    {
+      provide: DeliveriesRepository,
+      useClass: PrismaDeliveriesRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -35,6 +41,7 @@ import { PrismaRecipientsRepository } from './prisma/repositories/delivery/prism
     CouriersRepository,
     RecipientsRepository,
     RecipientAddressesRepository,
+    DeliveriesRepository,
   ],
 })
 export class DatabaseModule {}
