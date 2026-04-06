@@ -24,6 +24,8 @@ import { CreateDeliveryController } from './controllers/delivery/delivery/create
 import { CreateDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/create-delivery'
 import { WaitForPickupController } from './controllers/delivery/delivery/wait-for-pickup.controller'
 import { WaitForPickupUseCase } from '@/domain/delivery/application/use-cases/delivery/wait-for-pickup'
+import { StartTransitController } from './controllers/delivery/delivery/start-transit.controller'
+import { StartTransitUseCase } from '@/domain/delivery/application/use-cases/delivery/start-transit'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule],
@@ -41,6 +43,7 @@ import { WaitForPickupUseCase } from '@/domain/delivery/application/use-cases/de
     DeleteRecipientAddressController,
     CreateDeliveryController,
     WaitForPickupController,
+    StartTransitController,
   ],
   providers: [
     // Identity
@@ -56,6 +59,7 @@ import { WaitForPickupUseCase } from '@/domain/delivery/application/use-cases/de
     DeleteRecipientAddressUseCase,
     CreateDeliveryUseCase,
     WaitForPickupUseCase,
+    StartTransitUseCase,
   ],
 })
 export class HttpModule {}
