@@ -28,6 +28,8 @@ import { StartTransitController } from './controllers/delivery/delivery/start-tr
 import { StartTransitUseCase } from '@/domain/delivery/application/use-cases/delivery/start-transit'
 import { CompleteDeliveryController } from './controllers/delivery/delivery/complete-delivery.controller'
 import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
+import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
+import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule],
@@ -47,6 +49,7 @@ import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases
     WaitForPickupController,
     StartTransitController,
     CompleteDeliveryController,
+    DeleteDeliveryController,
   ],
   providers: [
     // Identity
@@ -64,6 +67,7 @@ import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases
     WaitForPickupUseCase,
     StartTransitUseCase,
     CompleteDeliveryUseCase,
+    DeleteDeliveryUseCase,
   ],
 })
 export class HttpModule {}
