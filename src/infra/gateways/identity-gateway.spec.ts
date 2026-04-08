@@ -11,32 +11,23 @@ describe('Identity Gateway', () => {
     gateway = new IdentityGateway(accountsRepository)
   })
 
-  it('should be able to find a worker by id', async () => {
-    const account = makeAccount({
-      email: 'john@example.com',
-      role: 'WORKER',
-    })
+  it('should be able to find an account by id', async () => {
+    const account = makeAccount()
 
     accountsRepository.items.push(account)
 
-    const result = await gateway.findWorkerById(account.id.toString())
+    const result = await gateway.getAccount(account.id.toString())
 
     expect(result).toEqual(
       expect.objectContaining({
         id: account.id.toString(),
+        role: account.role,
       }),
     )
   })
 
-  it('should not be able to find a worker with a different role', async () => {
-    const account = makeAccount({
-      email: 'john@example.com',
-      role: 'ADMIN',
-    })
-
-    accountsRepository.items.push(account)
-
-    const result = await gateway.findWorkerById(account.id.toString())
+  it('should return null when account is not found', async () => {
+    const result = await gateway.getAccount('invalid-account-id')
 
     expect(result).toBeNull()
   })

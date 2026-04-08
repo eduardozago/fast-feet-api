@@ -20,6 +20,16 @@ import { UpdateRecipientAddressController } from './controllers/delivery/recipie
 import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/update-recipient-address'
 import { DeleteRecipientAddressController } from './controllers/delivery/recipient/delete-recipient-address.controller'
 import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/delete-recipient-address'
+import { CreateDeliveryController } from './controllers/delivery/delivery/create-delivery.controller'
+import { CreateDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/create-delivery'
+import { WaitForPickupController } from './controllers/delivery/delivery/wait-for-pickup.controller'
+import { WaitForPickupUseCase } from '@/domain/delivery/application/use-cases/delivery/wait-for-pickup'
+import { StartTransitController } from './controllers/delivery/delivery/start-transit.controller'
+import { StartTransitUseCase } from '@/domain/delivery/application/use-cases/delivery/start-transit'
+import { CompleteDeliveryController } from './controllers/delivery/delivery/complete-delivery.controller'
+import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
+import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
+import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule],
@@ -35,6 +45,11 @@ import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use
     FetchRecipientAddressesController,
     UpdateRecipientAddressController,
     DeleteRecipientAddressController,
+    CreateDeliveryController,
+    WaitForPickupController,
+    StartTransitController,
+    CompleteDeliveryController,
+    DeleteDeliveryController,
   ],
   providers: [
     // Identity
@@ -48,6 +63,11 @@ import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use
     FetchRecipientAddressesUseCase,
     UpdateRecipientAddressUseCase,
     DeleteRecipientAddressUseCase,
+    CreateDeliveryUseCase,
+    WaitForPickupUseCase,
+    StartTransitUseCase,
+    CompleteDeliveryUseCase,
+    DeleteDeliveryUseCase,
   ],
 })
 export class HttpModule {}

@@ -51,4 +51,22 @@ describe('Create Account', () => {
     expect(couriersRepository.items).toHaveLength(0)
     expect(result.value).toBeInstanceOf(AccountNotFoundError)
   })
+
+  it('should not be able to register a courier with invalid account role', async () => {
+    const account = makeAccount({
+      email: 'john@example.com',
+      role: 'ADMIN',
+    })
+
+    accountsRepository.items.push(account)
+
+    const result = await sut.execute({
+      accountId: account.id.toString(),
+      name: 'John Doe',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(couriersRepository.items).toHaveLength(0)
+    expect(result.value).toBeInstanceOf(AccountNotFoundError)
+  })
 })
