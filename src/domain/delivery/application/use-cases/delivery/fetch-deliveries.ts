@@ -2,7 +2,6 @@ import { Either, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
 import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
-import { AccountNotFoundError } from '../courier/errors/account-not-found-error'
 
 interface FetchDeliveriesUseCaseRequest {
   page: number
@@ -10,7 +9,7 @@ interface FetchDeliveriesUseCaseRequest {
 }
 
 export type FetchDeliveriesUseCaseResponse = Either<
-  AccountNotFoundError,
+  null,
   {
     deliveries: Delivery[]
   }
