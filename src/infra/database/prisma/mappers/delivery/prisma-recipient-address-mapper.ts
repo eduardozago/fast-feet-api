@@ -6,6 +6,10 @@ import {
 } from 'generated/prisma/client'
 
 export class PrismaRecipientAddressMapper {
+  private static parseDecimal(raw: Prisma.Decimal) {
+    return Number(raw)
+  }
+
   static toDomain(raw: PrismaRecipientAddress) {
     return RecipientAddress.create(
       {
@@ -18,6 +22,8 @@ export class PrismaRecipientAddressMapper {
         state: raw.state,
         country: raw.country,
         postalCode: raw.postalCode,
+        latitude: this.parseDecimal(raw.latitude),
+        longitude: this.parseDecimal(raw.longitude),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -39,6 +45,8 @@ export class PrismaRecipientAddressMapper {
       state: recipientAddress.state,
       country: recipientAddress.country,
       postalCode: recipientAddress.postalCode,
+      latitude: recipientAddress.latitude,
+      longitude: recipientAddress.longitude,
       createdAt: recipientAddress.createdAt,
       updatedAt: recipientAddress.updatedAt,
     }
