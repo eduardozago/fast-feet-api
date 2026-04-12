@@ -84,6 +84,8 @@ model RecipientAddress {
   state        String
   country      String
   postalCode   String    @map("postal_code")
+  latitude     Decimal   @db.Decimal(8, 6)
+  longitude    Decimal   @db.Decimal(9, 6)
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime? @updatedAt @map("updated_at")
 
