@@ -6,12 +6,6 @@ export class GeocodingServiceError extends Error implements UseCaseError {
   }
 }
 
-export class GeocodingNetworkError extends GeocodingServiceError {
-  constructor(message = 'Network error during geocoding') {
-    super(message)
-  }
-}
-
 export class GeocodingInvalidResponseError extends GeocodingServiceError {
   constructor() {
     super('Invalid response from geocoding service')
