@@ -37,6 +37,7 @@ describe('Authenticate', () => {
 
     const accessTokenEncrypted = await encrypter.encrypt({
       sub: account.id.toString(),
+      role: account.role,
     })
 
     expect(result.isRight()).toBe(true)
