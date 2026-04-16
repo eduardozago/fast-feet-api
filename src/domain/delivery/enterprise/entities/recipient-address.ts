@@ -12,6 +12,8 @@ export interface RecipientAddressProps {
   state: string
   country: string
   postalCode: string
+  latitude: number
+  longitude: number
   createdAt: Date
   updatedAt?: Date | null
 }
@@ -51,6 +53,14 @@ export class RecipientAddress extends Entity<RecipientAddressProps> {
 
   get postalCode() {
     return this.props.postalCode
+  }
+
+  get latitude() {
+    return this.props.latitude
+  }
+
+  get longitude() {
+    return this.props.longitude
   }
 
   get createdAt() {

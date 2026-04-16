@@ -5,6 +5,8 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { RecipientAddressesRepository } from '../../repositories/recipient-addresses-repository'
 import { RecipientsRepository } from '../../repositories/recipients-repository'
 import { RecipientNotFoundError } from './errors/recipient-not-found-error'
+import { GeocodingService } from '../../location/geocoding-service'
+import { GeocodingServiceError } from '../errors/geocoding-service-error'
 
 interface CreateRecipientAddressUseCaseRequest {
   recipientId: string
@@ -19,7 +21,7 @@ interface CreateRecipientAddressUseCaseRequest {
 }
 
 export type CreateRecipientAddressUseCaseResponse = Either<
-  RecipientNotFoundError,
+  RecipientNotFoundError | GeocodingServiceError,
   {
     recipientAddress: RecipientAddress
   }
@@ -30,6 +32,7 @@ export class CreateRecipientAddressUseCase {
   constructor(
     private recipientAddressesRepository: RecipientAddressesRepository,
     private recipientsRepository: RecipientsRepository,
+    private geocodingService: GeocodingService,
   ) {}
 
   async execute({
@@ -49,6 +52,22 @@ export class CreateRecipientAddressUseCase {
       return left(new RecipientNotFoundError())
     }
 
+    const geocodingResult = await this.geocodingService.geocode({
+      street,
+      number,
+      neighborhood,
+      city,
+      state,
+      country,
+      postalCode,
+    })
+
+    if (geocodingResult.isLeft()) {
+      return left(geocodingResult.value)
+    }
+
+    const { latitude, longitude } = geocodingResult.value
+
     const recipientAddress = RecipientAddress.create({
       recipientId: new UniqueEntityID(recipientId),
       street,
@@ -59,6 +78,8 @@ export class CreateRecipientAddressUseCase {
       state,
       country,
       postalCode,
+      latitude,
+      longitude,
     })
 
     await this.recipientAddressesRepository.create(recipientAddress)

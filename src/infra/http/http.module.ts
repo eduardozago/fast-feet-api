@@ -30,9 +30,10 @@ import { CompleteDeliveryController } from './controllers/delivery/delivery/comp
 import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
 import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
 import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
+import { LocationModule } from '../location/location.module'
 
 @Module({
-  imports: [DatabaseModule, CryptographyModule, GatewaysModule],
+  imports: [DatabaseModule, CryptographyModule, GatewaysModule, LocationModule],
   controllers: [
     // Identity
     CreateAccountController,
