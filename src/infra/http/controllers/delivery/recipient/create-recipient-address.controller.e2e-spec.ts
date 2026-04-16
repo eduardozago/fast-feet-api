@@ -1,4 +1,5 @@
 import { AppModule } from '@/app.module'
+import { GeocodingService } from '@/domain/delivery/application/location/geocoding-service'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { JwtService } from '@nestjs/jwt'
@@ -11,6 +12,7 @@ import request from 'supertest'
 import { RecipientFactory } from 'test/factories/delivery/make-recipient'
 import { makeRecipientAddress } from 'test/factories/delivery/make-recipient-address'
 import { AccountFactory } from 'test/factories/identity/make-account'
+import { FakeGeocodingService } from 'test/location/fake-geocoding-service'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Create Recipient Address (E2E)', () => {
@@ -27,6 +29,8 @@ describe('Create Recipient Address (E2E)', () => {
     })
       .overrideProvider(PrismaService)
       .useClass(PrismaServiceE2E)
+      .overrideProvider(GeocodingService)
+      .useClass(FakeGeocodingService)
       .compile()
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(
