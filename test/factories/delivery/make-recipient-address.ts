@@ -22,6 +22,8 @@ export function makeRecipientAddress(
       state: faker.location.state(),
       country: faker.location.country(),
       postalCode: faker.location.zipCode(),
+      latitude: faker.location.latitude(),
+      longitude: faker.location.longitude(),
       ...override,
     },
     id,
