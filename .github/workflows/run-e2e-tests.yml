@@ -48,3 +48,5 @@ jobs:
           JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
           JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/fast_feet'
+          NOMINATIM_API_URL: 'https://nominatim.openstreetmap.org'
+          NOMINATIM_API_USER_AGENT: 'FastFeet/1.0 (github.com/eduardozago/fast-feet)'
