@@ -4,6 +4,7 @@ import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { PrismaDeliveryMapper } from '../../mappers/delivery/prisma-delivery-mapper'
 import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
 import { PaginationParams } from '@/core/core/pagination-params'
+import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 
 @Injectable()
 export class PrismaDeliveriesRepository implements DeliveriesRepository {
@@ -30,6 +31,52 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     })
 
     return deliveries.map((delivery) => PrismaDeliveryMapper.toDomain(delivery))
+  }
+
+  async findNearby(
+    courierId: string,
+    courierCoordinate: Coordinate,
+    radiusInKm: number,
+  ): Promise<Delivery[]> {
+    const latitudeDelta = radiusInKm / 111
+    const longitudeDivisor =
+      111 *
+      Math.max(Math.cos((courierCoordinate.latitude * Math.PI) / 180), 0.000001)
+    const longitudeDelta = radiusInKm / longitudeDivisor
+
+    const deliveries = await this.prisma.delivery.findMany({
+      where: {
+        courierId,
+        recipientAddress: {
+          latitude: {
+            gte: courierCoordinate.latitude - latitudeDelta,
+            lte: courierCoordinate.latitude + latitudeDelta,
+          },
+          longitude: {
+            gte: courierCoordinate.longitude - longitudeDelta,
+            lte: courierCoordinate.longitude + longitudeDelta,
+          },
+        },
+      },
+      include: {
+        recipientAddress: true,
+      },
+    })
+
+    const nearbyDeliveries = deliveries.filter((delivery) => {
+      const recipientCoordinate = Coordinate.create({
+        latitude: Number(delivery.recipientAddress.latitude),
+        longitude: Number(delivery.recipientAddress.longitude),
+      })
+
+      const distanceInKm = courierCoordinate.distanceTo(recipientCoordinate)
+
+      return distanceInKm <= radiusInKm
+    })
+
+    return nearbyDeliveries.map((delivery) =>
+      PrismaDeliveryMapper.toDomain(delivery),
+    )
   }
 
   async create(delivery: Delivery): Promise<void> {
