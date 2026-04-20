@@ -9,6 +9,7 @@ export abstract class DeliveriesRepository {
     courierId: string,
     courierCoordinate: Coordinate,
     radiusInKm: number,
+    params: PaginationParams,
   ): Promise<Delivery[]>
   abstract create(delivery: Delivery): Promise<void>
   abstract update(delivery: Delivery): Promise<void>
