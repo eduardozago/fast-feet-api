@@ -37,6 +37,7 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     courierId: string,
     courierCoordinate: Coordinate,
     radiusInKm: number,
+    { page, limit }: PaginationParams,
   ): Promise<Delivery[]> {
     const latitudeDelta = radiusInKm / 111
     const longitudeDivisor =
@@ -61,6 +62,8 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
       include: {
         recipientAddress: true,
       },
+      take: limit,
+      skip: (page - 1) * limit,
     })
 
     const nearbyDeliveries = deliveries.filter((delivery) => {
