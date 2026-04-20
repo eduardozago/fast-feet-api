@@ -31,6 +31,7 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     courierId: string,
     courierCoordinate: Coordinate,
     radiusInKm: number,
+    { page, limit }: PaginationParams,
   ): Promise<Delivery[]> {
     if (!this.recipientAddressesRepository) {
       throw new Error('Recipient addresses repository not provided')
@@ -56,7 +57,12 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
         nearbyRecipientAddressIds.has(item.recipientAddressId.toString()),
     )
 
-    return Promise.resolve(deliveries)
+    const paginatedDeliveries = deliveries.slice(
+      (page - 1) * limit,
+      page * limit,
+    )
+
+    return Promise.resolve(paginatedDeliveries)
   }
 
   create(delivery: Delivery): Promise<void> {
