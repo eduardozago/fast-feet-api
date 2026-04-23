@@ -14,6 +14,18 @@ export class InMemoryCouriersRepository implements CouriersRepository {
     return Promise.resolve(courier)
   }
 
+  findByAccountId(accountId: string): Promise<Courier | null> {
+    const courier = this.items.find(
+      (item) => item.accountId.toString() === accountId,
+    )
+
+    if (!courier) {
+      return Promise.resolve(null)
+    }
+
+    return Promise.resolve(courier)
+  }
+
   create(courier: Courier): Promise<void> {
     this.items.push(courier)
 
