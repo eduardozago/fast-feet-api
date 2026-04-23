@@ -22,6 +22,20 @@ export class PrismaCouriersRepository implements CouriersRepository {
     return PrismaCourierMapper.toDomain(courier)
   }
 
+  async findByAccountId(accountId: string): Promise<Courier | null> {
+    const courier = await this.prisma.courier.findUnique({
+      where: {
+        accountId,
+      },
+    })
+
+    if (!courier) {
+      return null
+    }
+
+    return PrismaCourierMapper.toDomain(courier)
+  }
+
   async create(courier: Courier): Promise<void> {
     const data = PrismaCourierMapper.toPrisma(courier)
 
