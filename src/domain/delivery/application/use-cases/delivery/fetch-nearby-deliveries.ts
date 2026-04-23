@@ -7,7 +7,7 @@ import { CourierNotFoundError } from '../courier/errors/courier-not-found-error'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 
 interface FetchNearbyDeliveriesUseCaseRequest {
-  courierId: string
+  accountId: string
   latitude: number
   longitude: number
   radiusInKm: number
@@ -30,14 +30,14 @@ export class FetchNearbyDeliveriesUseCase {
   ) {}
 
   async execute({
-    courierId,
+    accountId,
     latitude,
     longitude,
     radiusInKm,
     page,
     limit,
   }: FetchNearbyDeliveriesUseCaseRequest): Promise<FetchNearbyDeliveriesUseCaseResponse> {
-    const courier = await this.couriersRepository.findById(courierId)
+    const courier = await this.couriersRepository.findByAccountId(accountId)
 
     if (!courier) {
       return left(new CourierNotFoundError())
@@ -49,7 +49,7 @@ export class FetchNearbyDeliveriesUseCase {
     })
 
     const deliveries = await this.deliveriesRepository.findNearby(
-      courierId,
+      courier.id.toString(),
       courierCoordinate,
       radiusInKm,
       {
