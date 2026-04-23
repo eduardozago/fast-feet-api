@@ -69,7 +69,7 @@ describe('Fetch Nearby Deliveries', () => {
     const longitude = -0.1280048
 
     const result = await sut.execute({
-      courierId: courier.id.toString(),
+      accountId: courier.accountId.toString(),
       latitude,
       longitude,
       radiusInKm: 10,
@@ -110,7 +110,7 @@ describe('Fetch Nearby Deliveries', () => {
     }
 
     const result = await sut.execute({
-      courierId: courier.id.toString(),
+      accountId: courier.accountId.toString(),
       latitude: courierCoordinate.latitude,
       longitude: courierCoordinate.longitude,
       radiusInKm: 10,
