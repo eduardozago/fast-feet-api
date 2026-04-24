@@ -5,6 +5,7 @@ import { PrismaDeliveryMapper } from '../../mappers/delivery/prisma-delivery-map
 import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
 import { PaginationParams } from '@/core/core/pagination-params'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
+import { DeliveryStatus } from 'generated/prisma/enums'
 
 @Injectable()
 export class PrismaDeliveriesRepository implements DeliveriesRepository {
@@ -58,6 +59,7 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
             lte: courierCoordinate.longitude + longitudeDelta,
           },
         },
+        status: DeliveryStatus.IN_TRANSIT,
       },
       include: {
         recipientAddress: true,
