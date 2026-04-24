@@ -1,6 +1,9 @@
 import { PaginationParams } from '@/core/core/pagination-params'
 import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
-import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
+import {
+  Delivery,
+  DeliveryStatus,
+} from '@/domain/delivery/enterprise/entities/delivery'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { InMemoryRecipientAddressesRepository } from './in-memory-recipient-addresses-repository'
 
@@ -54,7 +57,8 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     const deliveries = this.items.filter(
       (item) =>
         item.courierId?.toString() === courierId &&
-        nearbyRecipientAddressIds.has(item.recipientAddressId.toString()),
+        nearbyRecipientAddressIds.has(item.recipientAddressId.toString()) &&
+        item.status === DeliveryStatus.IN_TRANSIT,
     )
 
     const paginatedDeliveries = deliveries.slice(
