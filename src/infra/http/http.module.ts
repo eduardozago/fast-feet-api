@@ -31,6 +31,8 @@ import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases
 import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
 import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
 import { LocationModule } from '../location/location.module'
+import { FetchNearbyDeliveriesController } from './controllers/delivery/delivery/fetch-nearby-deliveries.controller'
+import { FetchNearbyDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-nearby-deliveries'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule, LocationModule],
@@ -51,6 +53,7 @@ import { LocationModule } from '../location/location.module'
     StartTransitController,
     CompleteDeliveryController,
     DeleteDeliveryController,
+    FetchNearbyDeliveriesController,
   ],
   providers: [
     // Identity
@@ -69,6 +72,7 @@ import { LocationModule } from '../location/location.module'
     StartTransitUseCase,
     CompleteDeliveryUseCase,
     DeleteDeliveryUseCase,
+    FetchNearbyDeliveriesUseCase,
   ],
 })
 export class HttpModule {}
