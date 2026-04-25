@@ -6,6 +6,7 @@ import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/
 import { makeRecipientAddress } from 'test/factories/delivery/make-recipient-address'
 import { InMemoryRecipientAddressesRepository } from 'test/repositories/delivery/in-memory-recipient-addresses-repository'
 import { makeCourier } from 'test/factories/delivery/make-courier'
+import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
 
 let deliveriesRepository: InMemoryDeliveriesRepository
 let couriersRepository: InMemoryCouriersRepository
@@ -51,14 +52,17 @@ describe('Fetch Nearby Deliveries', () => {
     const delivery1 = makeDelivery({
       courierId: courier.id,
       recipientAddressId: nearbyAddress1.id,
+      status: DeliveryStatus.IN_TRANSIT,
     })
     const delivery2 = makeDelivery({
       courierId: courier.id,
       recipientAddressId: nearbyAddress2.id,
+      status: DeliveryStatus.IN_TRANSIT,
     })
     const delivery3 = makeDelivery({
       courierId: courier.id,
       recipientAddressId: distantAddress.id,
+      status: DeliveryStatus.IN_TRANSIT,
     })
 
     await deliveriesRepository.create(delivery1)
@@ -105,6 +109,7 @@ describe('Fetch Nearby Deliveries', () => {
         makeDelivery({
           courierId: courier.id,
           recipientAddressId: address.id,
+          status: DeliveryStatus.IN_TRANSIT,
         }),
       )
     }
