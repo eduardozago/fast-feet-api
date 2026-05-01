@@ -1,6 +1,6 @@
 # Fast Feet API
 
-> A production-ready RESTful API for a **delivery management system**, built with clean architecture, Domain-Driven Design (DDD), and geospatial capabilities.
+> A portfolio-grade RESTful API for a **delivery management system**, built with clean architecture, Domain-Driven Design (DDD), and geospatial capabilities.
 
 [![Unit Tests](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-unit-tests.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-unit-tests.yml)
 [![E2E Tests](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-e2e-tests.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-e2e-tests.yml)
@@ -22,7 +22,7 @@
 
 ## Overview
 
-Fast Feet API manages the full lifecycle of package deliveries — from account creation and courier registration, through recipient address geocoding, to real-time nearby delivery queries based on geolocation. It was designed as a portfolio project to demonstrate production-grade backend engineering practices.
+Fast Feet API manages the full lifecycle of package deliveries — from account creation and courier registration, through recipient address geocoding, to real-time nearby delivery queries based on geolocation. It was designed as a portfolio project to demonstrate production-inspired backend engineering practices.
 
 ---
 
