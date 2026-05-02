@@ -1,9 +1,8 @@
 import { FetchDeliveriesUseCase } from './fetch-deliveries'
-import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
 import { InMemoryDeliveriesRepository } from 'test/repositories/delivery/in-memory-deliveries-repository'
 import { makeDelivery } from 'test/factories/delivery/make-delivery'
 
-let deliveriesRepository: DeliveriesRepository
+let deliveriesRepository: InMemoryDeliveriesRepository
 let sut: FetchDeliveriesUseCase
 
 describe('Fetch Deliveries', () => {
@@ -23,11 +22,7 @@ describe('Fetch Deliveries', () => {
 
     expect(result.isRight()).toBe(true)
 
-    if (result.isLeft()) {
-      throw new Error('Expected right result')
-    }
-
-    expect(result.value.deliveries).toHaveLength(2)
+    expect(result.value!.deliveries).toHaveLength(2)
   })
 
   it('should be able to fetch paginated deliveries', async () => {
@@ -42,10 +37,6 @@ describe('Fetch Deliveries', () => {
 
     expect(result.isRight()).toBe(true)
 
-    if (result.isLeft()) {
-      throw new Error('Expected right result')
-    }
-
-    expect(result.value.deliveries).toHaveLength(2)
+    expect(result.value!.deliveries).toHaveLength(2)
   })
 })
