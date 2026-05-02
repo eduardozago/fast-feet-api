@@ -1,6 +1,6 @@
 import { InMemoryDeliveriesRepository } from 'test/repositories/delivery/in-memory-deliveries-repository'
 import { makeDelivery } from 'test/factories/delivery/make-delivery'
-import { FetchNearbyDeliveriesUseCase } from './fetch-nearby-deliveries'
+import { FetchNearbyCourierDeliveriesUseCase } from './fetch-nearby-courier-deliveries'
 import { InMemoryCouriersRepository } from 'test/repositories/delivery/in-memory-couriers-repository'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { makeRecipientAddress } from 'test/factories/delivery/make-recipient-address'
@@ -11,22 +11,22 @@ import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
 let deliveriesRepository: InMemoryDeliveriesRepository
 let couriersRepository: InMemoryCouriersRepository
 let recipientAddressesRepository: InMemoryRecipientAddressesRepository
-let sut: FetchNearbyDeliveriesUseCase
+let sut: FetchNearbyCourierDeliveriesUseCase
 
-describe('Fetch Nearby Deliveries', () => {
+describe('Fetch Nearby Courier Deliveries', () => {
   beforeEach(() => {
     couriersRepository = new InMemoryCouriersRepository()
     recipientAddressesRepository = new InMemoryRecipientAddressesRepository()
     deliveriesRepository = new InMemoryDeliveriesRepository(
       recipientAddressesRepository,
     )
-    sut = new FetchNearbyDeliveriesUseCase(
+    sut = new FetchNearbyCourierDeliveriesUseCase(
       deliveriesRepository,
       couriersRepository,
     )
   })
 
-  it('should be able to fetch nearby deliveries', async () => {
+  it('should be able to fetch nearby courier deliveries', async () => {
     const courier = makeCourier()
     await couriersRepository.create(courier)
 
