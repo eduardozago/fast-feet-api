@@ -1,12 +1,15 @@
 import { Either, left, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
-import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
+import {
+  Delivery,
+  DeliveryStatus,
+} from '@/domain/delivery/enterprise/entities/delivery'
 import { CouriersRepository } from '../../repositories/couriers-repository'
-import { CourierNotFoundError } from '../courier/errors/courier-not-found-error'
+import { CourierNotFoundError } from './errors/courier-not-found-error'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 
-interface FetchNearbyDeliveriesUseCaseRequest {
+interface FetchNearbyCourierDeliveriesUseCaseRequest {
   accountId: string
   latitude: number
   longitude: number
@@ -15,7 +18,7 @@ interface FetchNearbyDeliveriesUseCaseRequest {
   limit: number
 }
 
-export type FetchNearbyDeliveriesUseCaseResponse = Either<
+export type FetchNearbyCourierDeliveriesUseCaseResponse = Either<
   CourierNotFoundError,
   {
     deliveries: Delivery[]
@@ -23,7 +26,7 @@ export type FetchNearbyDeliveriesUseCaseResponse = Either<
 >
 
 @Injectable()
-export class FetchNearbyDeliveriesUseCase {
+export class FetchNearbyCourierDeliveriesUseCase {
   constructor(
     private deliveriesRepository: DeliveriesRepository,
     private couriersRepository: CouriersRepository,
@@ -36,7 +39,7 @@ export class FetchNearbyDeliveriesUseCase {
     radiusInKm,
     page,
     limit,
-  }: FetchNearbyDeliveriesUseCaseRequest): Promise<FetchNearbyDeliveriesUseCaseResponse> {
+  }: FetchNearbyCourierDeliveriesUseCaseRequest): Promise<FetchNearbyCourierDeliveriesUseCaseResponse> {
     const courier = await this.couriersRepository.findByAccountId(accountId)
 
     if (!courier) {
@@ -48,13 +51,16 @@ export class FetchNearbyDeliveriesUseCase {
       longitude,
     })
 
-    const deliveries = await this.deliveriesRepository.findNearby(
+    const deliveries = await this.deliveriesRepository.findNearbyByCourierId(
       courier.id.toString(),
       courierCoordinate,
       radiusInKm,
       {
         page,
         limit,
+      },
+      {
+        status: DeliveryStatus.IN_TRANSIT,
       },
     )
 
