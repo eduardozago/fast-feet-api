@@ -1,6 +1,8 @@
 import { PaginationParams } from '@/core/core/pagination-params'
 import { Delivery, DeliveryStatus } from '../../enterprise/entities/delivery'
 import { Coordinate } from '../../enterprise/entities/value-objects/coordinate'
+import { DeliveryDetails } from './read-models/delivery-details'
+import { CourierDeliveryDetails } from './read-models/courier-delivery-details'
 
 export interface FindManyDeliveriesFilters {
   status?: DeliveryStatus
@@ -12,19 +14,19 @@ export abstract class DeliveriesRepository {
   abstract findMany(
     params: PaginationParams,
     filters?: FindManyDeliveriesFilters,
-  ): Promise<Delivery[]>
+  ): Promise<DeliveryDetails[]>
   abstract findManyByCourierId(
     courierId: string,
     params: PaginationParams,
     filters?: FindManyDeliveriesFilters,
-  ): Promise<Delivery[]>
+  ): Promise<CourierDeliveryDetails[]>
   abstract findNearbyByCourierId(
     courierId: string,
     courierCoordinate: Coordinate,
     radiusInKm: number,
     params: PaginationParams,
     filters?: FindManyDeliveriesFilters,
-  ): Promise<Delivery[]>
+  ): Promise<CourierDeliveryDetails[]>
   abstract create(delivery: Delivery): Promise<void>
   abstract update(delivery: Delivery): Promise<void>
   abstract delete(delivery: Delivery): Promise<void>
