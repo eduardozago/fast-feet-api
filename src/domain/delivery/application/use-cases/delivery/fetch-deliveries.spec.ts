@@ -1,6 +1,7 @@
 import { FetchDeliveriesUseCase } from './fetch-deliveries'
 import { InMemoryDeliveriesRepository } from 'test/repositories/delivery/in-memory-deliveries-repository'
 import { makeDelivery } from 'test/factories/delivery/make-delivery'
+import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
 
 let deliveriesRepository: InMemoryDeliveriesRepository
 let sut: FetchDeliveriesUseCase
@@ -16,6 +17,42 @@ describe('Fetch Deliveries', () => {
     await deliveriesRepository.create(makeDelivery())
 
     const result = await sut.execute({
+      page: 1,
+      limit: 10,
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    expect(result.value!.deliveries).toHaveLength(2)
+  })
+
+  it('should be able to fetch deliveries by status', async () => {
+    await deliveriesRepository.create(
+      makeDelivery({
+        status: DeliveryStatus.CREATED,
+      }),
+    )
+
+    await deliveriesRepository.create(
+      makeDelivery({
+        status: DeliveryStatus.IN_TRANSIT,
+      }),
+    )
+
+    await deliveriesRepository.create(
+      makeDelivery({
+        status: DeliveryStatus.IN_TRANSIT,
+      }),
+    )
+
+    await deliveriesRepository.create(
+      makeDelivery({
+        status: DeliveryStatus.COMPLETED,
+      }),
+    )
+
+    const result = await sut.execute({
+      status: DeliveryStatus.IN_TRANSIT,
       page: 1,
       limit: 10,
     })
