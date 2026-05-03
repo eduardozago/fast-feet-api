@@ -56,7 +56,7 @@ describe('Fetch Nearby Deliveries (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[GET] /deliveries/nearby', async () => {
+  test('[GET] /couriers/me/deliveries/nearby', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'WORKER',
@@ -140,9 +140,14 @@ describe('Fetch Nearby Deliveries (E2E)', () => {
     })
 
     const response = await request(app.getHttpServer())
-      .get(
-        '/deliveries/nearby?latitude=51.501476&longitude=-0.1280048&radiusInKm=10&page=1&limit=10',
-      )
+      .get('/couriers/me/deliveries/nearby')
+      .query({
+        latitude: 51.501476,
+        longitude: -0.1280048,
+        radiusInKm: 10,
+        page: 1,
+        limit: 10,
+      })
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
