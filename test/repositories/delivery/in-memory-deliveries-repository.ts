@@ -6,12 +6,18 @@ import {
 } from '@/domain/delivery/enterprise/entities/delivery'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { InMemoryRecipientAddressesRepository } from './in-memory-recipient-addresses-repository'
+import { DeliveryDetails } from '@/domain/delivery/application/repositories/read-models/delivery-details'
+import { CourierDeliveryDetails } from '@/domain/delivery/application/repositories/read-models/courier-delivery-details'
+import { InMemoryRecipientsRepository } from './in-memory-recipients-repository'
+import { InMemoryCouriersRepository } from './in-memory-couriers-repository'
 
 export class InMemoryDeliveriesRepository implements DeliveriesRepository {
   public items: Delivery[] = []
 
   constructor(
     private recipientAddressesRepository?: InMemoryRecipientAddressesRepository,
+    private recipientsRepository?: InMemoryRecipientsRepository,
+    private couriersRepository?: InMemoryCouriersRepository,
   ) {}
 
   findById(id: string): Promise<Delivery | null> {
@@ -27,7 +33,15 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
   findMany(
     { page, limit }: PaginationParams,
     { status, recipientId }: FindManyDeliveriesFilters = {},
-  ): Promise<Delivery[]> {
+  ): Promise<DeliveryDetails[]> {
+    if (!this.recipientsRepository) {
+      throw new Error('Recipients repository not provided')
+    }
+
+    if (!this.couriersRepository) {
+      throw new Error('Couriers repository not provided')
+    }
+
     let deliveries = this.items
 
     if (recipientId) {
@@ -42,14 +56,43 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
 
     deliveries = deliveries.slice((page - 1) * limit, page * limit)
 
-    return Promise.resolve(deliveries)
+    const deliveriesDetails: DeliveryDetails[] = deliveries.map((delivery) => {
+      const recipient = this.recipientsRepository?.items.find(
+        (item) => item.id.toString() === delivery.recipientId.toString(),
+      )
+
+      if (!recipient) {
+        throw new Error('Recipient not found')
+      }
+
+      const courier = this.couriersRepository?.items.find(
+        (item) => item.id.toString() === delivery.courierId?.toString(),
+      )
+
+      return DeliveryDetails.create({
+        deliveryId: delivery.id,
+        recipientId: delivery.recipientId,
+        courierId: courier ? courier.id : null,
+        recipientName: recipient.name,
+        courierName: courier ? courier.name : null,
+        status: delivery.status,
+        createdAt: delivery.createdAt,
+        updatedAt: delivery.updatedAt,
+      })
+    })
+
+    return Promise.resolve(deliveriesDetails)
   }
 
   findManyByCourierId(
     courierId: string,
     { page, limit }: PaginationParams,
     { status, recipientId }: FindManyDeliveriesFilters,
-  ): Promise<Delivery[]> {
+  ): Promise<CourierDeliveryDetails[]> {
+    if (!this.recipientsRepository) {
+      throw new Error('Recipients repository not provided')
+    }
+
     let deliveries = this.items.filter(
       (item) => item.courierId && item.courierId.toString() === courierId,
     )
@@ -66,7 +109,28 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
 
     deliveries = deliveries.slice((page - 1) * limit, page * limit)
 
-    return Promise.resolve(deliveries)
+    const deliveriesDetails: CourierDeliveryDetails[] = deliveries.map(
+      (delivery) => {
+        const recipient = this.recipientsRepository?.items.find(
+          (item) => item.id.toString() === delivery.recipientId.toString(),
+        )
+
+        if (!recipient) {
+          throw new Error('Recipient not found')
+        }
+
+        return CourierDeliveryDetails.create({
+          deliveryId: delivery.id,
+          recipientId: delivery.recipientId,
+          recipientName: recipient.name,
+          status: delivery.status,
+          createdAt: delivery.createdAt,
+          updatedAt: delivery.updatedAt,
+        })
+      },
+    )
+
+    return Promise.resolve(deliveriesDetails)
   }
 
   findNearbyByCourierId(
@@ -75,10 +139,15 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     radiusInKm: number,
     { page, limit }: PaginationParams,
     { status, recipientId }: FindManyDeliveriesFilters,
-  ): Promise<Delivery[]> {
+  ): Promise<CourierDeliveryDetails[]> {
     if (!this.recipientAddressesRepository) {
       throw new Error('Recipient addresses repository not provided')
     }
+
+    if (!this.recipientsRepository) {
+      throw new Error('Recipients repository not provided')
+    }
+
 
     const nearbyRecipientAddressIds = new Set(
       this.recipientAddressesRepository.items
@@ -111,7 +180,30 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
       )
     }
 
-    const paginatedDeliveries = deliveries.slice(
+    
+
+    const deliveriesDetails: CourierDeliveryDetails[] = deliveries.map(
+      (delivery) => {
+        const recipient = this.recipientsRepository?.items.find(
+          (item) => item.id.toString() === delivery.recipientId.toString(),
+        )
+
+        if (!recipient) {
+          throw new Error('Recipient not found')
+        }
+
+        return CourierDeliveryDetails.create({
+          deliveryId: delivery.id,
+          recipientId: delivery.recipientId,
+          recipientName: recipient.name,
+          status: delivery.status,
+          createdAt: delivery.createdAt,
+          updatedAt: delivery.updatedAt,
+        })
+      },
+    )
+
+    const paginatedDeliveries = deliveriesDetails.slice(
       (page - 1) * limit,
       page * limit,
     )
