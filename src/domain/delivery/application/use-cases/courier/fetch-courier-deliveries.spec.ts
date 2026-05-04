@@ -3,16 +3,22 @@ import { InMemoryDeliveriesRepository } from 'test/repositories/delivery/in-memo
 import { makeDelivery } from 'test/factories/delivery/make-delivery'
 import { makeCourier } from 'test/factories/delivery/make-courier'
 import { InMemoryCouriersRepository } from 'test/repositories/delivery/in-memory-couriers-repository'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
+import { InMemoryRecipientsRepository } from 'test/repositories/delivery/in-memory-recipients-repository'
+import { makeRecipient } from 'test/factories/delivery/make-recipient'
 
 let deliveriesRepository: InMemoryDeliveriesRepository
 let couriersRepository: InMemoryCouriersRepository
+let recipientsRepository: InMemoryRecipientsRepository
 let sut: FetchCourierDeliveriesUseCase
 
 describe('Fetch Courier Deliveries', () => {
   beforeEach(() => {
-    deliveriesRepository = new InMemoryDeliveriesRepository()
+    recipientsRepository = new InMemoryRecipientsRepository()
+    deliveriesRepository = new InMemoryDeliveriesRepository(
+      undefined,
+      recipientsRepository,
+    )
     couriersRepository = new InMemoryCouriersRepository()
     sut = new FetchCourierDeliveriesUseCase(
       deliveriesRepository,
@@ -24,28 +30,34 @@ describe('Fetch Courier Deliveries', () => {
     const courier = makeCourier()
     await couriersRepository.create(courier)
 
+    const recipient1 = makeRecipient()
+    await recipientsRepository.create(recipient1)
+
+    const recipient2 = makeRecipient()
+    await recipientsRepository.create(recipient2)
+
+    const recipient3 = makeRecipient()
+    await recipientsRepository.create(recipient3)
+
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient1.id,
         status: DeliveryStatus.IN_TRANSIT,
       }),
     )
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient2.id,
         status: DeliveryStatus.IN_TRANSIT,
       }),
     )
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient3.id,
         status: DeliveryStatus.COMPLETED,
-      }),
-    )
-    await deliveriesRepository.create(
-      makeDelivery({
-        courierId: new UniqueEntityID('other-courier-id'),
-        status: DeliveryStatus.IN_TRANSIT,
       }),
     )
 
@@ -62,33 +74,65 @@ describe('Fetch Courier Deliveries', () => {
     }
 
     expect(result.value.deliveries).toHaveLength(3)
+    expect(result.value.deliveries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: DeliveryStatus.IN_TRANSIT,
+          recipientName: recipient1.name,
+        }),
+        expect.objectContaining({
+          status: DeliveryStatus.IN_TRANSIT,
+          recipientName: recipient2.name,
+        }),
+        expect.objectContaining({
+          status: DeliveryStatus.COMPLETED,
+          recipientName: recipient3.name,
+        }),
+      ]),
+    )
   })
 
   it('should be able to fetch courier deliveries filtered by status', async () => {
     const courier = makeCourier()
     await couriersRepository.create(courier)
 
+    const recipient1 = makeRecipient()
+    await recipientsRepository.create(recipient1)
+
+    const recipient2 = makeRecipient()
+    await recipientsRepository.create(recipient2)
+
+    const recipient3 = makeRecipient()
+    await recipientsRepository.create(recipient3)
+
+    const recipient4 = makeRecipient()
+    await recipientsRepository.create(recipient4)
+
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient1.id,
         status: DeliveryStatus.IN_TRANSIT,
       }),
     )
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient2.id,
         status: DeliveryStatus.IN_TRANSIT,
       }),
     )
     await deliveriesRepository.create(
       makeDelivery({
         courierId: courier.id,
+        recipientId: recipient3.id,
         status: DeliveryStatus.COMPLETED,
       }),
     )
     await deliveriesRepository.create(
       makeDelivery({
-        courierId: new UniqueEntityID('other-courier-id'),
+        courierId: courier.id,
+        recipientId: recipient4.id,
         status: DeliveryStatus.IN_TRANSIT,
       }),
     )
@@ -106,7 +150,23 @@ describe('Fetch Courier Deliveries', () => {
       throw new Error('Expected right result')
     }
 
-    expect(result.value.deliveries).toHaveLength(2)
+    expect(result.value.deliveries).toHaveLength(3)
+    expect(result.value.deliveries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: DeliveryStatus.IN_TRANSIT,
+          recipientName: recipient1.name,
+        }),
+        expect.objectContaining({
+          status: DeliveryStatus.IN_TRANSIT,
+          recipientName: recipient2.name,
+        }),
+        expect.objectContaining({
+          status: DeliveryStatus.IN_TRANSIT,
+          recipientName: recipient4.name,
+        }),
+      ]),
+    )
   })
 
   it('should be able to fetch paginated deliveries', async () => {
@@ -114,7 +174,11 @@ describe('Fetch Courier Deliveries', () => {
     await couriersRepository.create(courier)
 
     for (let i = 0; i < 12; i++) {
-      await deliveriesRepository.create(makeDelivery({ courierId: courier.id }))
+      const recipient = makeRecipient()
+      await recipientsRepository.create(recipient)
+      await deliveriesRepository.create(
+        makeDelivery({ courierId: courier.id, recipientId: recipient.id }),
+      )
     }
 
     const result = await sut.execute({
