@@ -1,13 +1,11 @@
 import { Either, left, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
-import {
-  Delivery,
-  DeliveryStatus,
-} from '@/domain/delivery/enterprise/entities/delivery'
+import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
 import { CouriersRepository } from '../../repositories/couriers-repository'
 import { CourierNotFoundError } from './errors/courier-not-found-error'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
+import { CourierDeliveryDetails } from '../../repositories/read-models/courier-delivery-details'
 
 interface FetchNearbyCourierDeliveriesUseCaseRequest {
   accountId: string
@@ -21,7 +19,7 @@ interface FetchNearbyCourierDeliveriesUseCaseRequest {
 export type FetchNearbyCourierDeliveriesUseCaseResponse = Either<
   CourierNotFoundError,
   {
-    deliveries: Delivery[]
+    deliveries: CourierDeliveryDetails[]
   }
 >
 
