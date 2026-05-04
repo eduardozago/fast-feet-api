@@ -1,10 +1,8 @@
 import { Either, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
-import {
-  Delivery,
-  DeliveryStatus,
-} from '@/domain/delivery/enterprise/entities/delivery'
+import { DeliveryStatus } from '@/domain/delivery/enterprise/entities/delivery'
+import { DeliveryDetails } from '../../repositories/read-models/delivery-details'
 
 interface FetchDeliveriesUseCaseRequest {
   status?: DeliveryStatus
@@ -15,7 +13,7 @@ interface FetchDeliveriesUseCaseRequest {
 export type FetchDeliveriesUseCaseResponse = Either<
   null,
   {
-    deliveries: Delivery[]
+    deliveries: DeliveryDetails[]
   }
 >
 
