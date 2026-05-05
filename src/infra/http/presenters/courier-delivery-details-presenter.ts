@@ -3,8 +3,8 @@ import { CourierDeliveryDetails } from '@/domain/delivery/application/repositori
 export class CourierDeliveryDetailsPresenter {
   static toHTTP(deliveryDetails: CourierDeliveryDetails) {
     return {
-      id: deliveryDetails.deliveryId,
-      recipientId: deliveryDetails.recipientId,
+      id: deliveryDetails.deliveryId.toString(),
+      recipientId: deliveryDetails.recipientId.toString(),
       recipientName: deliveryDetails.recipientName,
       status: deliveryDetails.status,
       createdAt: deliveryDetails.createdAt,
