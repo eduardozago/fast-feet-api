@@ -3,9 +3,11 @@ import { DeliveryDetails } from '@/domain/delivery/application/repositories/read
 export class DeliveryDetailsPresenter {
   static toHTTP(deliveryDetails: DeliveryDetails) {
     return {
-      id: deliveryDetails.deliveryId,
-      recipientId: deliveryDetails.recipientId,
-      courierId: deliveryDetails.courierId,
+      id: deliveryDetails.deliveryId.toString(),
+      recipientId: deliveryDetails.recipientId.toString(),
+      courierId: deliveryDetails.courierId
+        ? deliveryDetails.courierId.toString()
+        : null,
       recipientName: deliveryDetails.recipientName,
       courierName: deliveryDetails.courierName,
       status: deliveryDetails.status,
