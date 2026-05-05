@@ -1,9 +1,9 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { DeliveryPresenter } from '@/infra/http/presenters/delivery-presenter'
 import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-deliveries'
 import { Roles } from '@/infra/auth/roles.decorator'
+import { DeliveryDetailsPresenter } from '@/infra/http/presenters/delivery-details-presenter'
 
 const fetchDeliveriesQuerySchema = z.object({
   status: z
@@ -51,7 +51,7 @@ export class FetchDeliveriesController {
     }
 
     const deliveries = result.value.deliveries.map((delivery) =>
-      DeliveryPresenter.toHTTP(delivery),
+      DeliveryDetailsPresenter.toHTTP(delivery),
     )
 
     return {
