@@ -1,9 +1,9 @@
 import { PaginationParams } from '@/core/core/pagination-params'
-import { DeliveriesRepository, FindManyDeliveriesFilters } from '@/domain/delivery/application/repositories/deliveries-repository'
 import {
-  Delivery,
-  DeliveryStatus,
-} from '@/domain/delivery/enterprise/entities/delivery'
+  DeliveriesRepository,
+  FindManyDeliveriesFilters,
+} from '@/domain/delivery/application/repositories/deliveries-repository'
+import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { InMemoryRecipientAddressesRepository } from './in-memory-recipient-addresses-repository'
 import { DeliveryDetails } from '@/domain/delivery/application/repositories/read-models/delivery-details'
@@ -87,7 +87,7 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
   findManyByCourierId(
     courierId: string,
     { page, limit }: PaginationParams,
-    { status, recipientId }: FindManyDeliveriesFilters,
+    { status, recipientId }: FindManyDeliveriesFilters = {},
   ): Promise<CourierDeliveryDetails[]> {
     if (!this.recipientsRepository) {
       throw new Error('Recipients repository not provided')
@@ -138,7 +138,7 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     courierCoordinate: Coordinate,
     radiusInKm: number,
     { page, limit }: PaginationParams,
-    { status, recipientId }: FindManyDeliveriesFilters,
+    { status, recipientId }: FindManyDeliveriesFilters = {},
   ): Promise<CourierDeliveryDetails[]> {
     if (!this.recipientAddressesRepository) {
       throw new Error('Recipient addresses repository not provided')
@@ -147,7 +147,6 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
     if (!this.recipientsRepository) {
       throw new Error('Recipients repository not provided')
     }
-
 
     const nearbyRecipientAddressIds = new Set(
       this.recipientAddressesRepository.items
@@ -179,8 +178,6 @@ export class InMemoryDeliveriesRepository implements DeliveriesRepository {
         (item) => item.recipientId.toString() === recipientId,
       )
     }
-
-    
 
     const deliveriesDetails: CourierDeliveryDetails[] = deliveries.map(
       (delivery) => {
