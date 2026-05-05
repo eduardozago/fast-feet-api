@@ -10,8 +10,8 @@ import { FetchNearbyCourierDeliveriesUseCase } from '@/domain/delivery/applicati
 import { z } from 'zod'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { DeliveryPresenter } from '@/infra/http/presenters/delivery-presenter'
 import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
+import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
 
 const fetchNearbyCourierDeliveriesQuerySchema = z.object({
   latitude: z.coerce
@@ -89,7 +89,7 @@ export class FetchNearbyCourierDeliveriesController {
     }
 
     const deliveries = result.value.deliveries.map((delivery) =>
-      DeliveryPresenter.toHTTP(delivery),
+      CourierDeliveryDetailsPresenter.toHTTP(delivery),
     )
 
     return {
