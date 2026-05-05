@@ -2,10 +2,17 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma.service'
 import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { PrismaDeliveryMapper } from '../../mappers/delivery/prisma-delivery-mapper'
-import { DeliveriesRepository, FindManyDeliveriesFilters } from '@/domain/delivery/application/repositories/deliveries-repository'
+import {
+  DeliveriesRepository,
+  FindManyDeliveriesFilters,
+} from '@/domain/delivery/application/repositories/deliveries-repository'
 import { PaginationParams } from '@/core/core/pagination-params'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { DeliveryStatus } from 'generated/prisma/enums'
+import { DeliveryDetails } from '@/domain/delivery/application/repositories/read-models/delivery-details'
+import { CourierDeliveryDetails } from '@/domain/delivery/application/repositories/read-models/courier-delivery-details'
+import { PrismaDeliveryDetailsMapper } from '../../mappers/delivery/prisma-delivery-details-mapper'
+import { PrismaCourierDeliveryDetailsMapper } from '../../mappers/delivery/prisma-courier-delivery-details'
 
 @Injectable()
 export class PrismaDeliveriesRepository implements DeliveriesRepository {
@@ -25,35 +32,61 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     return PrismaDeliveryMapper.toDomain(delivery)
   }
 
-  async findMany({ page, limit }: PaginationParams, { status, recipientId }: FindManyDeliveriesFilters = {}): Promise<Delivery[]> {
+  async findMany(
+    { page, limit }: PaginationParams,
+    { status, recipientId }: FindManyDeliveriesFilters = {},
+  ): Promise<DeliveryDetails[]> {
     const deliveries = await this.prisma.delivery.findMany({
-      take: limit,
-      skip: (page - 1) * limit,
       where: {
         ...(status && { status }),
         ...(recipientId && { recipientId }),
       },
+      include: {
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
+        courier: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: limit,
+      skip: (page - 1) * limit,
     })
 
-    return deliveries.map((delivery) => PrismaDeliveryMapper.toDomain(delivery))
+    return deliveries.map((delivery) =>
+      PrismaDeliveryDetailsMapper.toDomain(delivery),
+    )
   }
 
   async findManyByCourierId(
     courierId: string,
     { page, limit }: PaginationParams,
     { status, recipientId }: FindManyDeliveriesFilters = {},
-  ): Promise<Delivery[]> {
+  ): Promise<CourierDeliveryDetails[]> {
     const deliveries = await this.prisma.delivery.findMany({
       where: {
         courierId,
         ...(status && { status }),
         ...(recipientId && { recipientId }),
       },
+      include: {
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
+      },
       take: limit,
       skip: (page - 1) * limit,
     })
 
-    return deliveries.map((delivery) => PrismaDeliveryMapper.toDomain(delivery))
+    return deliveries.map((delivery) =>
+      PrismaCourierDeliveryDetailsMapper.toDomain(delivery),
+    )
   }
 
   async findNearbyByCourierId(
@@ -62,7 +95,7 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     radiusInKm: number,
     { page, limit }: PaginationParams,
     { status, recipientId }: FindManyDeliveriesFilters = {},
-  ): Promise<Delivery[]> {
+  ): Promise<CourierDeliveryDetails[]> {
     const latitudeDelta = radiusInKm / 111
     const longitudeDivisor =
       111 *
@@ -87,6 +120,11 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
       },
       include: {
         recipientAddress: true,
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
       },
       take: limit,
       skip: (page - 1) * limit,
@@ -104,7 +142,7 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     })
 
     return nearbyDeliveries.map((delivery) =>
-      PrismaDeliveryMapper.toDomain(delivery),
+      PrismaCourierDeliveryDetailsMapper.toDomain(delivery),
     )
   }
 
