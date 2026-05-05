@@ -16,6 +16,7 @@ export class PrismaDeliveryDetailsMapper {
     return DeliveryDetails.create({
       deliveryId: new UniqueEntityID(raw.id),
       recipientId: new UniqueEntityID(raw.recipientId),
+      courierId: raw.courierId ? new UniqueEntityID(raw.courierId) : null,
       recipientName: raw.recipient.name,
       courierName: raw.courier ? raw.courier.name : null,
       status: raw.status,
