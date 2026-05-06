@@ -102,7 +102,7 @@ Argon2id was selected over bcrypt/scrypt because it is the winner of the Passwor
 
 ### Haversine formula in the application layer
 
-The nearby deliveries feature (`GET /deliveries/nearby`) calculates distances using the Haversine formula in a custom `Coordinate` value object rather than relying on a PostGIS extension or database-level geospatial functions. **Trade-off**: the current approach fetches the courier's deliveries and filters by distance in the Prisma query using a bounding-box pre-filter (latitude/longitude range), avoiding a full table scan. This is pragmatic for moderate data volumes. For a production system at scale, migrating the `recipient_addresses` table to PostGIS and using `ST_DWithin` would be the right move.
+The nearby deliveries feature (`GET /couriers/me/deliveries/nearby`) calculates distances using the Haversine formula in a custom `Coordinate` value object rather than relying on a PostGIS extension or database-level geospatial functions. **Trade-off**: the current approach filters deliveries with a latitude/longitude bounding box first, then applies exact distance validation in the repository. This is pragmatic for moderate data volumes. For a production system at scale, migrating the `recipient_addresses` table to PostGIS and using `ST_DWithin` would be the right move.
 
 ### Nominatim geocoding (free, no API key)
 
@@ -116,9 +116,13 @@ Zod schemas are defined in each controller and piped through a custom `ZodValida
 
 Each E2E test run creates a unique PostgreSQL schema (`test_<uuid>`) via the `PrismaServiceE2E` adapter and `db push`. This enables fully parallel test execution without test data collisions and cleans up automatically after each suite.
 
-### `accountId` vs `courierId` in use cases
+### Delivery read models for list endpoints
 
-The `FetchNearbyDeliveriesUseCase` accepts an `accountId` (from the JWT payload) rather than a `courierId`. This is intentional: the HTTP layer should expose as little internal domain data as possible. The use case resolves the courier by its linked account ID internally, keeping the API surface clean.
+Delivery listing endpoints return application read models instead of raw domain entities. This keeps write-side domain entities focused on business rules while allowing list responses to include frontend-friendly fields such as recipient and courier names. HTTP presenters still own the final response shape.
+
+### `accountId` vs `courierId` in courier use cases
+
+Courier-specific delivery use cases accept an `accountId` (from the JWT payload) rather than a `courierId`. This is intentional: the HTTP layer should expose as little internal domain data as possible. The use case resolves the courier by its linked account ID internally, keeping the API surface clean.
 
 ---
 
@@ -153,13 +157,31 @@ The `FetchNearbyDeliveriesUseCase` accepts an `accountId` (from the JWT payload)
 | Method   | Path                              | Auth | Role   | Description                                        |
 | -------- | --------------------------------- | ---- | ------ | -------------------------------------------------- |
 | `POST`   | `/deliveries`                     | JWT  | ADMIN  | Create a delivery                                  |
+| `GET`    | `/deliveries`                     | JWT  | ADMIN  | List deliveries with recipient/courier details     |
 | `PATCH`  | `/deliveries/:id/wait-for-pickup` | JWT  | ADMIN  | Transition to WAITING_PICKUP                       |
 | `PATCH`  | `/deliveries/:id/start-transit`   | JWT  | ADMIN  | Transition to IN_TRANSIT (assigns courier)         |
 | `PATCH`  | `/deliveries/:id/complete`        | JWT  | ADMIN  | Transition to COMPLETED                            |
 | `DELETE` | `/deliveries/:id`                 | JWT  | ADMIN  | Delete a delivery (only if CREATED)                |
-| `GET`    | `/deliveries/nearby`              | JWT  | WORKER | List own nearby deliveries by coordinates + radius |
+| `GET`    | `/couriers/me/deliveries`         | JWT  | WORKER | List authenticated courier deliveries              |
+| `GET`    | `/couriers/me/deliveries/nearby`  | JWT  | WORKER | List own nearby deliveries by coordinates + radius |
 
-#### `GET /deliveries/nearby` Query Parameters
+#### `GET /deliveries` Query Parameters
+
+| Param    | Type      | Required | Description                              |
+| -------- | --------- | -------- | ---------------------------------------- |
+| `status` | `string`  | ❌       | Filter by delivery status                |
+| `page`   | `integer` | ❌       | Page number (default: 1)                 |
+| `limit`  | `integer` | ❌       | Results per page (default: 20, max: 100) |
+
+#### `GET /couriers/me/deliveries` Query Parameters
+
+| Param    | Type      | Required | Description                              |
+| -------- | --------- | -------- | ---------------------------------------- |
+| `status` | `string`  | ❌       | Filter by delivery status                |
+| `page`   | `integer` | ❌       | Page number (default: 1)                 |
+| `limit`  | `integer` | ❌       | Results per page (default: 20, max: 100) |
+
+#### `GET /couriers/me/deliveries/nearby` Query Parameters
 
 | Param        | Type      | Required | Description                               |
 | ------------ | --------- | -------- | ----------------------------------------- |
@@ -248,7 +270,7 @@ pnpm test:cov
 - [x] Change account password
 - [x] Register couriers linked to worker accounts
 - [x] Create, update, and delete recipients and their addresses (with geocoding)
-- [x] Create, list, and delete deliveries
+- [x] Create, list, filter, and delete deliveries
 - [x] Transition delivery status: WAITING_PICKUP → IN_TRANSIT → COMPLETED
 - [x] Couriers query their nearby deliveries by coordinates and radius
 
