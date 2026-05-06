@@ -126,22 +126,30 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
           },
         },
       },
-      take: limit,
-      skip: (page - 1) * limit,
     })
 
-    const nearbyDeliveries = deliveries.filter((delivery) => {
-      const recipientCoordinate = Coordinate.create({
-        latitude: Number(delivery.recipientAddress.latitude),
-        longitude: Number(delivery.recipientAddress.longitude),
+    const nearbyDeliveries = deliveries
+      .map((delivery) => {
+        const recipientCoordinate = Coordinate.create({
+          latitude: Number(delivery.recipientAddress.latitude),
+          longitude: Number(delivery.recipientAddress.longitude),
+        })
+
+        return {
+          delivery,
+          distanceInKm: courierCoordinate.distanceTo(recipientCoordinate),
+        }
       })
+      .filter(({ distanceInKm }) => distanceInKm <= radiusInKm)
+      .sort((a, b) => a.distanceInKm - b.distanceInKm)
+      .map(({ delivery }) => delivery)
 
-      const distanceInKm = courierCoordinate.distanceTo(recipientCoordinate)
+    const paginatedDeliveries = nearbyDeliveries.slice(
+      (page - 1) * limit,
+      page * limit,
+    )
 
-      return distanceInKm <= radiusInKm
-    })
-
-    return nearbyDeliveries.map((delivery) =>
+    return paginatedDeliveries.map((delivery) =>
       PrismaCourierDeliveryDetailsMapper.toDomain(delivery),
     )
   }
