@@ -3,12 +3,12 @@ import { RecipientAddress } from '@/domain/delivery/enterprise/entities/recipien
 export class RecipientAddressPresenter {
   static toHTTP(recipientAddress: RecipientAddress) {
     return {
-      id: recipientAddress.id,
-      recipientId: recipientAddress.recipientId,
+      id: recipientAddress.id.toString(),
+      recipientId: recipientAddress.recipientId.toString(),
       street: recipientAddress.street,
       number: recipientAddress.number,
       neighborhood: recipientAddress.neighborhood,
-      complement: recipientAddress.complement,
+      complement: recipientAddress.complement ?? null,
       city: recipientAddress.city,
       state: recipientAddress.state,
       country: recipientAddress.country,
