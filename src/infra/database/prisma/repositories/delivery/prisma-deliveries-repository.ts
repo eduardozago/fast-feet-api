@@ -2,10 +2,17 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma.service'
 import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { PrismaDeliveryMapper } from '../../mappers/delivery/prisma-delivery-mapper'
-import { DeliveriesRepository } from '@/domain/delivery/application/repositories/deliveries-repository'
+import {
+  DeliveriesRepository,
+  FindManyDeliveriesFilters,
+} from '@/domain/delivery/application/repositories/deliveries-repository'
 import { PaginationParams } from '@/core/core/pagination-params'
 import { Coordinate } from '@/domain/delivery/enterprise/entities/value-objects/coordinate'
 import { DeliveryStatus } from 'generated/prisma/enums'
+import { DeliveryDetails } from '@/domain/delivery/application/repositories/read-models/delivery-details'
+import { CourierDeliveryDetails } from '@/domain/delivery/application/repositories/read-models/courier-delivery-details'
+import { PrismaDeliveryDetailsMapper } from '../../mappers/delivery/prisma-delivery-details-mapper'
+import { PrismaCourierDeliveryDetailsMapper } from '../../mappers/delivery/prisma-courier-delivery-details'
 
 @Injectable()
 export class PrismaDeliveriesRepository implements DeliveriesRepository {
@@ -25,21 +32,70 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     return PrismaDeliveryMapper.toDomain(delivery)
   }
 
-  async findMany({ page, limit }: PaginationParams): Promise<Delivery[]> {
+  async findMany(
+    { page, limit }: PaginationParams,
+    { status, recipientId }: FindManyDeliveriesFilters = {},
+  ): Promise<DeliveryDetails[]> {
     const deliveries = await this.prisma.delivery.findMany({
+      where: {
+        ...(status && { status }),
+        ...(recipientId && { recipientId }),
+      },
+      include: {
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
+        courier: {
+          select: {
+            name: true,
+          },
+        },
+      },
       take: limit,
       skip: (page - 1) * limit,
     })
 
-    return deliveries.map((delivery) => PrismaDeliveryMapper.toDomain(delivery))
+    return deliveries.map((delivery) =>
+      PrismaDeliveryDetailsMapper.toDomain(delivery),
+    )
   }
 
-  async findNearby(
+  async findManyByCourierId(
+    courierId: string,
+    { page, limit }: PaginationParams,
+    { status, recipientId }: FindManyDeliveriesFilters = {},
+  ): Promise<CourierDeliveryDetails[]> {
+    const deliveries = await this.prisma.delivery.findMany({
+      where: {
+        courierId,
+        ...(status && { status }),
+        ...(recipientId && { recipientId }),
+      },
+      include: {
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+    })
+
+    return deliveries.map((delivery) =>
+      PrismaCourierDeliveryDetailsMapper.toDomain(delivery),
+    )
+  }
+
+  async findNearbyByCourierId(
     courierId: string,
     courierCoordinate: Coordinate,
     radiusInKm: number,
     { page, limit }: PaginationParams,
-  ): Promise<Delivery[]> {
+    { status, recipientId }: FindManyDeliveriesFilters = {},
+  ): Promise<CourierDeliveryDetails[]> {
     const latitudeDelta = radiusInKm / 111
     const longitudeDivisor =
       111 *
@@ -59,28 +115,42 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
             lte: courierCoordinate.longitude + longitudeDelta,
           },
         },
-        status: DeliveryStatus.IN_TRANSIT,
+        status: status ?? DeliveryStatus.IN_TRANSIT,
+        ...(recipientId && { recipientId }),
       },
       include: {
         recipientAddress: true,
+        recipient: {
+          select: {
+            name: true,
+          },
+        },
       },
-      take: limit,
-      skip: (page - 1) * limit,
     })
 
-    const nearbyDeliveries = deliveries.filter((delivery) => {
-      const recipientCoordinate = Coordinate.create({
-        latitude: Number(delivery.recipientAddress.latitude),
-        longitude: Number(delivery.recipientAddress.longitude),
+    const nearbyDeliveries = deliveries
+      .map((delivery) => {
+        const recipientCoordinate = Coordinate.create({
+          latitude: Number(delivery.recipientAddress.latitude),
+          longitude: Number(delivery.recipientAddress.longitude),
+        })
+
+        return {
+          delivery,
+          distanceInKm: courierCoordinate.distanceTo(recipientCoordinate),
+        }
       })
+      .filter(({ distanceInKm }) => distanceInKm <= radiusInKm)
+      .sort((a, b) => a.distanceInKm - b.distanceInKm)
+      .map(({ delivery }) => delivery)
 
-      const distanceInKm = courierCoordinate.distanceTo(recipientCoordinate)
+    const paginatedDeliveries = nearbyDeliveries.slice(
+      (page - 1) * limit,
+      page * limit,
+    )
 
-      return distanceInKm <= radiusInKm
-    })
-
-    return nearbyDeliveries.map((delivery) =>
-      PrismaDeliveryMapper.toDomain(delivery),
+    return paginatedDeliveries.map((delivery) =>
+      PrismaCourierDeliveryDetailsMapper.toDomain(delivery),
     )
   }
 

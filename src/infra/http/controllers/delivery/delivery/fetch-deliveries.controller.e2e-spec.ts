@@ -16,7 +16,7 @@ import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-
 import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
-describe('Fetch Nearby Deliveries (E2E)', () => {
+describe('Fetch Deliveries (E2E)', () => {
   let app: NestFastifyApplication
   let accountFactory: AccountFactory
   let courierFactory: CourierFactory
@@ -56,14 +56,28 @@ describe('Fetch Nearby Deliveries (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[GET] /deliveries/nearby', async () => {
+  test('[GET] /deliveries', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
+      role: 'ADMIN',
+    })
+
+    const workerAccount = await accountFactory.makePrismaAccount({
+      email: 'worker@example.com',
       role: 'WORKER',
     })
 
-    const courier = await courierFactory.makePrismaCourier({
-      accountId: account.id,
+    const workerAccount2 = await accountFactory.makePrismaAccount({
+      email: 'worker2@example.com',
+      role: 'WORKER',
+    })
+
+    const courier1 = await courierFactory.makePrismaCourier({
+      accountId: workerAccount.id,
+    })
+
+    const courier2 = await courierFactory.makePrismaCourier({
+      accountId: workerAccount2.id,
     })
 
     const accessToken = jwt.sign({
@@ -71,82 +85,56 @@ describe('Fetch Nearby Deliveries (E2E)', () => {
       role: account.role,
     })
 
-    const nearbyRecipient1 = await recipientFactory.makePrismaRecipient()
-    const nearbyRecipient2 = await recipientFactory.makePrismaRecipient()
-    const distantRecipient = await recipientFactory.makePrismaRecipient()
-    const anotherCourierRecipient = await recipientFactory.makePrismaRecipient()
+    const recipient1 = await recipientFactory.makePrismaRecipient()
+    const recipient2 = await recipientFactory.makePrismaRecipient()
+    const recipient3 = await recipientFactory.makePrismaRecipient()
 
-    const nearbyAddress1 =
+    const recipient1Address =
       await recipientAddressFactory.makePrismaRecipientAddress({
-        recipientId: nearbyRecipient1.id,
-        latitude: 51.502564,
-        longitude: -0.1149108,
+        recipientId: recipient1.id,
       })
 
-    const nearbyAddress2 =
+    const recipient2Address =
       await recipientAddressFactory.makePrismaRecipientAddress({
-        recipientId: nearbyRecipient2.id,
-        latitude: 51.4583803,
-        longitude: -0.059257,
+        recipientId: recipient2.id,
       })
 
-    const distantAddress =
+    const recipient3Address =
       await recipientAddressFactory.makePrismaRecipientAddress({
-        recipientId: distantRecipient.id,
-        latitude: 51.4977334,
-        longitude: 0.2157321,
-      })
-
-    const anotherCourierNearbyAddress =
-      await recipientAddressFactory.makePrismaRecipientAddress({
-        recipientId: anotherCourierRecipient.id,
-        latitude: 51.501476,
-        longitude: -0.1280048,
+        recipientId: recipient3.id,
       })
 
     await deliveryFactory.makePrismaDelivery({
-      courierId: courier.id,
-      recipientId: nearbyRecipient1.id,
-      recipientAddressId: nearbyAddress1.id,
+      courierId: courier1.id,
+      recipientId: recipient1.id,
+      recipientAddressId: recipient1Address.id,
+      status: DeliveryStatus.CREATED,
+    })
+
+    await deliveryFactory.makePrismaDelivery({
+      courierId: courier2.id,
+      recipientId: recipient2.id,
+      recipientAddressId: recipient2Address.id,
       status: DeliveryStatus.IN_TRANSIT,
     })
 
     await deliveryFactory.makePrismaDelivery({
-      courierId: courier.id,
-      recipientId: nearbyRecipient2.id,
-      recipientAddressId: nearbyAddress2.id,
-      status: DeliveryStatus.IN_TRANSIT,
-    })
-
-    await deliveryFactory.makePrismaDelivery({
-      courierId: courier.id,
-      recipientId: distantRecipient.id,
-      recipientAddressId: distantAddress.id,
-      status: DeliveryStatus.IN_TRANSIT,
-    })
-
-    const anotherAccount = await accountFactory.makePrismaAccount({
-      role: 'WORKER',
-    })
-    const anotherCourier = await courierFactory.makePrismaCourier({
-      accountId: anotherAccount.id,
-    })
-
-    await deliveryFactory.makePrismaDelivery({
-      courierId: anotherCourier.id,
-      recipientId: anotherCourierRecipient.id,
-      recipientAddressId: anotherCourierNearbyAddress.id,
+      courierId: courier2.id,
+      recipientId: recipient3.id,
+      recipientAddressId: recipient3Address.id,
       status: DeliveryStatus.IN_TRANSIT,
     })
 
     const response = await request(app.getHttpServer())
-      .get(
-        '/deliveries/nearby?latitude=51.501476&longitude=-0.1280048&radiusInKm=10&page=1&limit=10',
-      )
+      .get('/deliveries')
+      .query({
+        page: 1,
+        limit: 10,
+      })
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(response.body.deliveries).toHaveLength(2)
+    expect(response.body.deliveries).toHaveLength(3)
   })
 })

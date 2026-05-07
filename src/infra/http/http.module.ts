@@ -31,8 +31,12 @@ import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases
 import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
 import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
 import { LocationModule } from '../location/location.module'
-import { FetchNearbyDeliveriesController } from './controllers/delivery/delivery/fetch-nearby-deliveries.controller'
-import { FetchNearbyDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-nearby-deliveries'
+import { FetchCourierDeliveriesController } from './controllers/delivery/courier/fetch-courier-deliveries.controller'
+import { FetchCourierDeliveriesUseCase } from '@/domain/delivery/application/use-cases/courier/fetch-courier-deliveries'
+import { FetchNearbyCourierDeliveriesController } from './controllers/delivery/courier/fetch-nearby-courier-deliveries.controller'
+import { FetchNearbyCourierDeliveriesUseCase } from '@/domain/delivery/application/use-cases/courier/fetch-nearby-courier-deliveries'
+import { FetchDeliveriesController } from './controllers/delivery/delivery/fetch-deliveries.controller'
+import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-deliveries'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule, LocationModule],
@@ -53,7 +57,9 @@ import { FetchNearbyDeliveriesUseCase } from '@/domain/delivery/application/use-
     StartTransitController,
     CompleteDeliveryController,
     DeleteDeliveryController,
-    FetchNearbyDeliveriesController,
+    FetchCourierDeliveriesController,
+    FetchNearbyCourierDeliveriesController,
+    FetchDeliveriesController,
   ],
   providers: [
     // Identity
@@ -72,7 +78,9 @@ import { FetchNearbyDeliveriesUseCase } from '@/domain/delivery/application/use-
     StartTransitUseCase,
     CompleteDeliveryUseCase,
     DeleteDeliveryUseCase,
-    FetchNearbyDeliveriesUseCase,
+    FetchCourierDeliveriesUseCase,
+    FetchNearbyCourierDeliveriesUseCase,
+    FetchDeliveriesUseCase,
   ],
 })
 export class HttpModule {}

@@ -2,16 +2,18 @@ import {
   BadRequestException,
   Controller,
   Get,
+  NotFoundException,
   Query,
   Req,
 } from '@nestjs/common'
-import { FetchNearbyDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-nearby-deliveries'
+import { FetchNearbyCourierDeliveriesUseCase } from '@/domain/delivery/application/use-cases/courier/fetch-nearby-courier-deliveries'
 import { z } from 'zod'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { DeliveryPresenter } from '@/infra/http/presenters/delivery-presenter'
+import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
+import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
 
-const fetchNearbyQuerySchema = z.object({
+const fetchNearbyCourierDeliveriesQuerySchema = z.object({
   latitude: z.coerce
     .number({
       message: 'latitude must be a valid number.',
@@ -47,24 +49,26 @@ const fetchNearbyQuerySchema = z.object({
     .default(20),
 })
 
-type FetchNearbyQuerySchema = z.infer<typeof fetchNearbyQuerySchema>
+type FetchNearbyCourierDeliveriesQuerySchema = z.infer<
+  typeof fetchNearbyCourierDeliveriesQuerySchema
+>
 
 @Controller()
-export class FetchNearbyDeliveriesController {
+export class FetchNearbyCourierDeliveriesController {
   constructor(
-    private fetchNearbyDeliveriesUseCase: FetchNearbyDeliveriesUseCase,
+    private fetchNearbyCourierDeliveriesUseCase: FetchNearbyCourierDeliveriesUseCase,
   ) {}
 
-  @Get('/deliveries/nearby')
+  @Get('/couriers/me/deliveries/nearby')
   async handle(
     @Req() req: { user: UserPayload },
-    @Query(new ZodValidationPipe(fetchNearbyQuerySchema))
-    query: FetchNearbyQuerySchema,
+    @Query(new ZodValidationPipe(fetchNearbyCourierDeliveriesQuerySchema))
+    query: FetchNearbyCourierDeliveriesQuerySchema,
   ) {
     const accountId = req.user.sub
     const { latitude, longitude, radiusInKm, page, limit } = query
 
-    const result = await this.fetchNearbyDeliveriesUseCase.execute({
+    const result = await this.fetchNearbyCourierDeliveriesUseCase.execute({
       accountId,
       latitude,
       longitude,
@@ -74,11 +78,18 @@ export class FetchNearbyDeliveriesController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      const error = result.value
+
+      switch (error.constructor) {
+        case CourierNotFoundError:
+          throw new NotFoundException(error.message)
+        default:
+          throw new BadRequestException(error.message)
+      }
     }
 
     const deliveries = result.value.deliveries.map((delivery) =>
-      DeliveryPresenter.toHTTP(delivery),
+      CourierDeliveryDetailsPresenter.toHTTP(delivery),
     )
 
     return {
