@@ -9,10 +9,10 @@ export class DeliveryDetailsPresenter {
         ? deliveryDetails.courierId.toString()
         : null,
       recipientName: deliveryDetails.recipientName,
-      courierName: deliveryDetails.courierName,
+      courierName: deliveryDetails.courierName ?? null,
       status: deliveryDetails.status,
       createdAt: deliveryDetails.createdAt,
-      updatedAt: deliveryDetails.updatedAt,
+      updatedAt: deliveryDetails.updatedAt ?? null,
     }
   }
 }
