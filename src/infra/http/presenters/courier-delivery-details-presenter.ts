@@ -8,7 +8,7 @@ export class CourierDeliveryDetailsPresenter {
       recipientName: deliveryDetails.recipientName,
       status: deliveryDetails.status,
       createdAt: deliveryDetails.createdAt,
-      updatedAt: deliveryDetails.updatedAt,
+      updatedAt: deliveryDetails.updatedAt ?? null,
     }
   }
 }
