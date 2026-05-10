@@ -96,10 +96,10 @@ model RecipientAddress {
 }
 
 enum DeliveryStatus {
-  CREATED        @map("created")
-  WAITING_PICKUP @map("waiting_pickup")
-  IN_TRANSIT     @map("in_transit")
-  COMPLETED      @map("completed")
+  CREATED    @map("created")
+  ASSIGNED   @map("assigned")
+  IN_TRANSIT @map("in_transit")
+  COMPLETED  @map("completed")
 
   @@map("delivery_status")
 }
