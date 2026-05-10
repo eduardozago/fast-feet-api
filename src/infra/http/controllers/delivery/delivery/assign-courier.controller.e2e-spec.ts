@@ -9,16 +9,18 @@ import {
 } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { CourierFactory } from 'test/factories/delivery/make-courier'
 import { DeliveryFactory } from 'test/factories/delivery/make-delivery'
 import { RecipientFactory } from 'test/factories/delivery/make-recipient'
 import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-address'
 import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
-describe('Wait for Pickup (E2E)', () => {
+describe('Assign Courier (E2E)', () => {
   let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
+  let courierFactory: CourierFactory
   let recipientFactory: RecipientFactory
   let recipientAddressFactory: RecipientAddressFactory
   let deliveryFactory: DeliveryFactory
@@ -29,6 +31,7 @@ describe('Wait for Pickup (E2E)', () => {
       imports: [AppModule, DatabaseModule],
       providers: [
         AccountFactory,
+        CourierFactory,
         RecipientFactory,
         RecipientAddressFactory,
         DeliveryFactory,
@@ -47,6 +50,7 @@ describe('Wait for Pickup (E2E)', () => {
     jwt = moduleRef.get(JwtService)
 
     accountFactory = moduleRef.get(AccountFactory)
+    courierFactory = moduleRef.get(CourierFactory)
     recipientFactory = moduleRef.get(RecipientFactory)
     recipientAddressFactory = moduleRef.get(RecipientAddressFactory)
     deliveryFactory = moduleRef.get(DeliveryFactory)
@@ -55,7 +59,7 @@ describe('Wait for Pickup (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PATCH] /deliveries/:id/wait-for-pickup', async () => {
+  test('[PATCH] /deliveries/:deliveryId/assign-courier', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'ADMIN',
@@ -78,9 +82,14 @@ describe('Wait for Pickup (E2E)', () => {
       status: DeliveryStatus.CREATED,
     })
 
+    const courier = await courierFactory.makePrismaCourier()
+
     const response = await request(app.getHttpServer())
-      .patch(`/deliveries/${delivery.id.toString()}/wait-for-pickup`)
+      .patch(`/deliveries/${delivery.id.toString()}/assign-courier`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        courierId: courier.id.toString(),
+      })
 
     expect(response.statusCode).toBe(204)
 
@@ -91,6 +100,7 @@ describe('Wait for Pickup (E2E)', () => {
     })
 
     expect(deliveryOnDatabase).toBeDefined()
-    expect(deliveryOnDatabase?.status).toBe('WAITING_PICKUP')
+    expect(deliveryOnDatabase?.status).toBe('ASSIGNED')
+    expect(deliveryOnDatabase?.courierId).toBe(courier.id.toString())
   })
 })
