@@ -1,15 +1,15 @@
 import { Either, left, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
+import { CouriersRepository } from '../../repositories/couriers-repository'
 import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { DeliveryNotFoundError } from './errors/delivery-not-found-error'
 import { CannotPickUpDeliveryError } from './errors/cannot-pick-up-error'
 import { InvalidCourierAssignedError } from './errors/invalid-courier-assigned-error'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 interface PickUpDeliveryUseCaseRequest {
   deliveryId: string
-  courierId: string
+  accountId: string
 }
 
 export type PickUpDeliveryUseCaseResponse = Either<
@@ -23,11 +23,14 @@ export type PickUpDeliveryUseCaseResponse = Either<
 
 @Injectable()
 export class PickUpDeliveryUseCase {
-  constructor(private deliveriesRepository: DeliveriesRepository) {}
+  constructor(
+    private deliveriesRepository: DeliveriesRepository,
+    private couriersRepository: CouriersRepository,
+  ) {}
 
   async execute({
     deliveryId,
-    courierId,
+    accountId,
   }: PickUpDeliveryUseCaseRequest): Promise<PickUpDeliveryUseCaseResponse> {
     const delivery = await this.deliveriesRepository.findById(deliveryId)
 
@@ -45,9 +48,13 @@ export class PickUpDeliveryUseCase {
       )
     }
 
-    const isCourierAssigned = delivery.courierId.equals(
-      new UniqueEntityID(courierId),
-    )
+    const courier = await this.couriersRepository.findByAccountId(accountId)
+
+    if (!courier) {
+      return left(new InvalidCourierAssignedError())
+    }
+
+    const isCourierAssigned = delivery.courierId.equals(courier.id)
 
     if (!isCourierAssigned) {
       return left(new InvalidCourierAssignedError())
