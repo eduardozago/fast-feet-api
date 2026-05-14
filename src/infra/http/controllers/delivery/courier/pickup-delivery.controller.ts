@@ -25,11 +25,11 @@ export class PickUpDeliveryController {
     @Param('deliveryId') deliveryId: string,
     @Req() req: { user: UserPayload },
   ) {
-    const courierId = req.user.sub
+    const accountId = req.user.sub
 
     const result = await this.pickUpDeliveryUseCase.execute({
       deliveryId,
-      courierId,
+      accountId,
     })
 
     if (result.isLeft()) {
