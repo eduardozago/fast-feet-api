@@ -6,9 +6,7 @@ import { Roles } from '@/infra/auth/roles.decorator'
 import { DeliveryDetailsPresenter } from '@/infra/http/presenters/delivery-details-presenter'
 
 const fetchDeliveriesQuerySchema = z.object({
-  status: z
-    .enum(['CREATED', 'WAITING_PICKUP', 'IN_TRANSIT', 'COMPLETED'])
-    .optional(),
+  status: z.enum(['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED']).optional(),
   page: z.coerce
     .number({
       message: 'page must be a valid number.',

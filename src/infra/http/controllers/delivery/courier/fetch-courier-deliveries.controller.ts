@@ -14,9 +14,7 @@ import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/co
 import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
 
 const fetchCourierDeliveriesQuerySchema = z.object({
-  status: z
-    .enum(['CREATED', 'WAITING_PICKUP', 'IN_TRANSIT', 'COMPLETED'])
-    .optional(),
+  status: z.enum(['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED']).optional(),
   page: z.coerce
     .number({
       message: 'page must be a valid number.',
