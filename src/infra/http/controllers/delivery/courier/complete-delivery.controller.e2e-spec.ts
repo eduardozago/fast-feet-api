@@ -9,16 +9,19 @@ import {
 } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { CourierFactory } from 'test/factories/delivery/make-courier'
 import { DeliveryFactory } from 'test/factories/delivery/make-delivery'
 import { RecipientFactory } from 'test/factories/delivery/make-recipient'
 import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-address'
 import { AccountFactory } from 'test/factories/identity/make-account'
+import { makeIdentityDocument } from 'test/factories/delivery/make-identity-type'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Complete Delivery (E2E)', () => {
   let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
+  let courierFactory: CourierFactory
   let recipientFactory: RecipientFactory
   let recipientAddressFactory: RecipientAddressFactory
   let deliveryFactory: DeliveryFactory
@@ -29,6 +32,7 @@ describe('Complete Delivery (E2E)', () => {
       imports: [AppModule, DatabaseModule],
       providers: [
         AccountFactory,
+        CourierFactory,
         RecipientFactory,
         RecipientAddressFactory,
         DeliveryFactory,
@@ -47,6 +51,7 @@ describe('Complete Delivery (E2E)', () => {
     jwt = moduleRef.get(JwtService)
 
     accountFactory = moduleRef.get(AccountFactory)
+    courierFactory = moduleRef.get(CourierFactory)
     recipientFactory = moduleRef.get(RecipientFactory)
     recipientAddressFactory = moduleRef.get(RecipientAddressFactory)
     deliveryFactory = moduleRef.get(DeliveryFactory)
@@ -55,10 +60,10 @@ describe('Complete Delivery (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PATCH] /deliveries/:id/complete', async () => {
+  test('[PATCH] /couriers/me/deliveries/:deliveryId/complete', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
-      role: 'ADMIN',
+      role: 'WORKER',
     })
 
     const accessToken = jwt.sign({
@@ -66,7 +71,13 @@ describe('Complete Delivery (E2E)', () => {
       role: account.role,
     })
 
-    const recipient = await recipientFactory.makePrismaRecipient()
+    const courier = await courierFactory.makePrismaCourier({
+      accountId: account.id,
+    })
+
+    const recipient = await recipientFactory.makePrismaRecipient({
+      identityDocument: makeIdentityDocument({ number: '12345678900' }),
+    })
 
     const address = await recipientAddressFactory.makePrismaRecipientAddress({
       recipientId: recipient.id,
@@ -76,11 +87,18 @@ describe('Complete Delivery (E2E)', () => {
       recipientId: recipient.id,
       recipientAddressId: address.id,
       status: DeliveryStatus.IN_TRANSIT,
+      courierId: courier.id,
     })
 
     const response = await request(app.getHttpServer())
-      .patch(`/deliveries/${delivery.id.toString()}/complete`)
+      .patch(`/couriers/me/deliveries/${delivery.id.toString()}/complete`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        receivedByName: recipient.name,
+        receivedByDocument: '12345678900',
+        recipientRelationship: 'RECIPIENT',
+        proofType: 'DOCUMENT',
+      })
 
     expect(response.statusCode).toBe(204)
 
@@ -92,5 +110,19 @@ describe('Complete Delivery (E2E)', () => {
 
     expect(deliveryOnDatabase).toBeDefined()
     expect(deliveryOnDatabase?.status).toBe('COMPLETED')
+
+    const proofOfDeliveryOnDatabase = await prisma.proofOfDelivery.findUnique({
+      where: {
+        deliveryId: delivery.id.toString(),
+      },
+    })
+
+    expect(proofOfDeliveryOnDatabase).toBeDefined()
+    expect(proofOfDeliveryOnDatabase?.courierId).toBe(courier.id.toString())
+    expect(proofOfDeliveryOnDatabase?.receivedByName).toBe(recipient.name)
+    expect(proofOfDeliveryOnDatabase?.receivedByDocument).toBe('12345678900')
+    expect(proofOfDeliveryOnDatabase?.recipientRelationship).toBe('RECIPIENT')
+    expect(proofOfDeliveryOnDatabase?.proofType).toBe('DOCUMENT')
+    expect(proofOfDeliveryOnDatabase?.documentMatchesRecipient).toBe(true)
   })
 })
