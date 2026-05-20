@@ -42,7 +42,8 @@ model Courier {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  deliveries Delivery[]
+  deliveries        Delivery[]
+  proofOfDeliveries ProofOfDelivery[]
 
   @@map("couriers")
 }
@@ -116,6 +117,30 @@ model Delivery {
   courier          Courier?         @relation(fields: [courierId], references: [id])
   recipient        Recipient        @relation(fields: [recipientId], references: [id])
   recipientAddress RecipientAddress @relation(fields: [recipientAddressId], references: [id])
+  proofOfDelivery  ProofOfDelivery?
 
   @@map("deliveries")
+}
+
+model ProofOfDelivery {
+  id                          String   @id @default(uuid())
+  deliveryId                  String   @unique @map("delivery_id")
+  courierId                   String   @map("courier_id")
+  receivedByName              String   @map("received_by_name")
+  receivedByDocument          String?  @map("received_by_document")
+  recipientRelationship       String   @map("recipient_relationship")
+  proofType                   String   @map("proof_type")
+  proofImageUrl               String?  @map("proof_image_url")
+  latitude                    Decimal? @db.Decimal(8, 6)
+  longitude                   Decimal? @db.Decimal(9, 6)
+  distanceFromDestinationInKm Decimal? @map("distance_from_destination_in_km")
+  locationValidationStatus    String   @map("location_validation_status")
+  documentMatchesRecipient    Boolean  @map("document_matches_recipient")
+  notes                       String?
+  createdAt                   DateTime @default(now()) @map("created_at")
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id])
+  courier  Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("proofs_of_delivery")
 }
