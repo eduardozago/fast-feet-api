@@ -12,6 +12,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
 import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
+import { Roles } from '@/infra/auth/roles.decorator'
 
 const fetchNearbyCourierDeliveriesQuerySchema = z.object({
   latitude: z.coerce
@@ -60,6 +61,7 @@ export class FetchNearbyCourierDeliveriesController {
   ) {}
 
   @Get('/couriers/me/deliveries/nearby')
+  @Roles('WORKER')
   async handle(
     @Req() req: { user: UserPayload },
     @Query(new ZodValidationPipe(fetchNearbyCourierDeliveriesQuerySchema))
