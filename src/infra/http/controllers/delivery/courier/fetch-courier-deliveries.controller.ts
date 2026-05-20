@@ -12,6 +12,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
 import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
+import { Roles } from '@/infra/auth/roles.decorator'
 
 const fetchCourierDeliveriesQuerySchema = z.object({
   status: z.enum(['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED']).optional(),
@@ -43,6 +44,7 @@ export class FetchCourierDeliveriesController {
   ) {}
 
   @Get('/couriers/me/deliveries')
+  @Roles('WORKER')
   async handle(
     @Req() req: { user: UserPayload },
     @Query(new ZodValidationPipe(fetchCourierDeliveriesQuerySchema))
