@@ -26,7 +26,7 @@ import { AssignCourierController } from './controllers/delivery/delivery/assign-
 import { AssignCourierUseCase } from '@/domain/delivery/application/use-cases/delivery/assign-courier'
 import { PickUpDeliveryController } from './controllers/delivery/courier/pickup-delivery.controller'
 import { PickUpDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/pick-up-delivery'
-import { CompleteDeliveryController } from './controllers/delivery/delivery/complete-delivery.controller'
+import { CompleteDeliveryController } from './controllers/delivery/courier/complete-delivery.controller'
 import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
 import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
 import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
