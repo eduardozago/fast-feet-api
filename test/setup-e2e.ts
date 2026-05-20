@@ -37,7 +37,7 @@ beforeAll(async () => {
       DATABASE_URL: `${process.env.DATABASE_URL}?schema=${schemaId}`,
     },
   })
-})
+}, 30000)
 
 afterAll(async () => {
   await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`)
