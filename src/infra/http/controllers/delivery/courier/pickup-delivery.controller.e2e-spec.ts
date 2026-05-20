@@ -16,7 +16,7 @@ import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-
 import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
-describe('Start Transit (E2E)', () => {
+describe('Pick Up Delivery (E2E)', () => {
   let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
@@ -59,7 +59,7 @@ describe('Start Transit (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PATCH] /deliveries/:id/start-transit', async () => {
+  test('[PATCH] /couriers/me/deliveries/:deliveryId/pick-up', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'WORKER',
