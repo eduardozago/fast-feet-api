@@ -16,7 +16,7 @@ import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-
 import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
-describe('Start Transit (E2E)', () => {
+describe('Assign Courier (E2E)', () => {
   let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
@@ -59,7 +59,7 @@ describe('Start Transit (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PATCH] /deliveries/:id/start-transit', async () => {
+  test('[PATCH] /deliveries/:deliveryId/assign-courier', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'ADMIN',
@@ -79,13 +79,13 @@ describe('Start Transit (E2E)', () => {
     const delivery = await deliveryFactory.makePrismaDelivery({
       recipientId: recipient.id,
       recipientAddressId: address.id,
-      status: DeliveryStatus.WAITING_PICKUP,
+      status: DeliveryStatus.CREATED,
     })
 
     const courier = await courierFactory.makePrismaCourier()
 
     const response = await request(app.getHttpServer())
-      .patch(`/deliveries/${delivery.id.toString()}/start-transit`)
+      .patch(`/deliveries/${delivery.id.toString()}/assign-courier`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         courierId: courier.id.toString(),
@@ -100,6 +100,7 @@ describe('Start Transit (E2E)', () => {
     })
 
     expect(deliveryOnDatabase).toBeDefined()
-    expect(deliveryOnDatabase?.status).toBe('IN_TRANSIT')
+    expect(deliveryOnDatabase?.status).toBe('ASSIGNED')
+    expect(deliveryOnDatabase?.courierId).toBe(courier.id.toString())
   })
 })

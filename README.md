@@ -50,7 +50,8 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 - **Courier management** — register couriers linked to worker accounts, with role validation
 - **Recipient management** — create recipients with identity documents (CPF, passport, etc.) and manage multiple addresses
 - **Address geocoding** — recipient addresses are automatically geocoded on creation and update via the Nominatim API, storing `latitude` and `longitude`
-- **Delivery lifecycle** — strict status flow: `CREATED → WAITING_PICKUP → IN_TRANSIT → COMPLETED`, with validation at every transition
+- **Delivery lifecycle** — strict status flow: `CREATED → ASSIGNED → IN_TRANSIT → COMPLETED`, with clear admin/courier ownership at each transition
+- **Proof of delivery** — couriers complete deliveries by submitting receiver evidence, optional GPS coordinates, and a proof image URL reference
 - **Nearby deliveries** — couriers query their own pending deliveries within a configurable radius (km) using the **Haversine formula** and paginated results
 - **Role-based access control** — global `JwtAuthGuard` + `RolesGuard`; admins manage the platform, couriers act only on their own deliveries
 - **CI pipelines** — unit tests and E2E tests run automatically on every pull request via GitHub Actions
@@ -124,6 +125,49 @@ Delivery listing endpoints return application read models instead of raw domain 
 
 Courier-specific delivery use cases accept an `accountId` (from the JWT payload) rather than a `courierId`. This is intentional: the HTTP layer should expose as little internal domain data as possible. The use case resolves the courier by its linked account ID internally, keeping the API surface clean.
 
+### Delivery lifecycle ownership
+
+The delivery lifecycle was modeled to reflect a realistic operational flow while keeping the API simple:
+
+```txt
+CREATED
+  ↓ admin assigns courier
+ASSIGNED
+  ↓ assigned courier picks up package
+IN_TRANSIT
+  ↓ assigned courier submits proof of delivery
+COMPLETED
+```
+
+### Proof of delivery without full file management
+
+Delivery completion is handled by a single courier endpoint that submits proof and completes the delivery in the same operation. This avoids inconsistent states such as a completed delivery without proof, or an orphan proof for a delivery still in transit.
+
+The proof model intentionally accepts flexible evidence:
+
+- `receivedByName` identifies who received the package.
+- `receivedByDocument` can be provided when available.
+- `recipientRelationship` supports real cases where a doorman, receptionist, neighbor, or family member receives the package.
+- `proofImageUrl` references an externally stored image, instead of making this API responsible for file upload/storage.
+- `latitude` and `longitude` are optional because couriers may complete deliveries in places with poor connectivity or unreliable GPS.
+- `notes` are required when the receiver is not the original recipient.
+
+**Trade-off:** this project stores a `proofImageUrl` instead of implementing a complete upload pipeline. A production system could later add direct-to-storage uploads, signed URLs, file validation, retention policies, and CDN integration. For this portfolio API, keeping storage external keeps the delivery domain focused on business rules.
+
+### Relaxed proof validation
+
+The API does not block completion only because the receiver document differs from the recipient record or because GPS is unavailable/out of range. Instead, it records validation signals:
+
+- `documentMatchesRecipient` shows whether the submitted document matches the recipient document.
+- `locationValidationStatus` classifies GPS evidence as `WITHIN_RANGE`, `OUT_OF_RANGE`, or `UNAVAILABLE`.
+- `distanceFromDestinationInKm` stores the computed distance when coordinates are provided.
+
+This is a pragmatic real-world approach: the system captures audit evidence without preventing valid deliveries in edge cases such as remote areas, offline operation, building reception desks, or authorized third-party receivers.
+
+### Atomic delivery completion
+
+Creating the proof of delivery and updating the delivery status are persisted in one transaction through a delivery completion persistence abstraction. The current abstraction is intentionally application-specific because completion changes two persisted models (`ProofOfDelivery` and `Delivery`) and must succeed or fail as one unit.
+
 ---
 
 ## API Endpoints
@@ -154,16 +198,16 @@ Courier-specific delivery use cases accept an `accountId` (from the JWT payload)
 
 ### Deliveries
 
-| Method   | Path                              | Auth | Role   | Description                                        |
-| -------- | --------------------------------- | ---- | ------ | -------------------------------------------------- |
-| `POST`   | `/deliveries`                     | JWT  | ADMIN  | Create a delivery                                  |
-| `GET`    | `/deliveries`                     | JWT  | ADMIN  | List deliveries with recipient/courier details     |
-| `PATCH`  | `/deliveries/:id/wait-for-pickup` | JWT  | ADMIN  | Transition to WAITING_PICKUP                       |
-| `PATCH`  | `/deliveries/:id/start-transit`   | JWT  | ADMIN  | Transition to IN_TRANSIT (assigns courier)         |
-| `PATCH`  | `/deliveries/:id/complete`        | JWT  | ADMIN  | Transition to COMPLETED                            |
-| `DELETE` | `/deliveries/:id`                 | JWT  | ADMIN  | Delete a delivery (only if CREATED)                |
-| `GET`    | `/couriers/me/deliveries`         | JWT  | WORKER | List authenticated courier deliveries              |
-| `GET`    | `/couriers/me/deliveries/nearby`  | JWT  | WORKER | List own nearby deliveries by coordinates + radius |
+| Method   | Path                                           | Auth | Role   | Description                                        |
+| -------- | ---------------------------------------------- | ---- | ------ | -------------------------------------------------- |
+| `POST`   | `/deliveries`                                  | JWT  | ADMIN  | Create a delivery                                  |
+| `GET`    | `/deliveries`                                  | JWT  | ADMIN  | List deliveries with recipient/courier details     |
+| `PATCH`  | `/deliveries/:deliveryId/assign-courier`       | JWT  | ADMIN  | Assign a courier and transition to ASSIGNED        |
+| `DELETE` | `/deliveries/:id`                              | JWT  | ADMIN  | Delete a delivery (only if CREATED)                |
+| `GET`    | `/couriers/me/deliveries`                      | JWT  | WORKER | List authenticated courier deliveries              |
+| `GET`    | `/couriers/me/deliveries/nearby`               | JWT  | WORKER | List own nearby deliveries by coordinates + radius |
+| `PATCH`  | `/couriers/me/deliveries/:deliveryId/pick-up`  | JWT  | WORKER | Assigned courier picks up a delivery               |
+| `PATCH`  | `/couriers/me/deliveries/:deliveryId/complete` | JWT  | WORKER | Assigned courier completes a delivery with proof   |
 
 #### `GET /deliveries` Query Parameters
 
@@ -190,6 +234,21 @@ Courier-specific delivery use cases accept an `accountId` (from the JWT payload)
 | `radiusInKm` | `number`  | ✅       | Search radius in km (max 100)             |
 | `page`       | `integer` | ❌       | Page number (default: 1)                  |
 | `limit`      | `integer` | ❌       | Results per page (default: 20, max: 100)  |
+
+#### `PATCH /couriers/me/deliveries/:deliveryId/complete` Body
+
+| Field                   | Type     | Required | Description                                                                     |
+| ----------------------- | -------- | -------- | ------------------------------------------------------------------------------- |
+| `receivedByName`        | `string` | ✅       | Name of the person who received the package                                     |
+| `receivedByDocument`    | `string` | ❌       | Receiver document; required when no `proofImageUrl` is sent                     |
+| `recipientRelationship` | `string` | ✅       | `RECIPIENT`, `FAMILY_MEMBER`, `DOORMAN`, `RECEPTIONIST`, `NEIGHBOR`, or `OTHER` |
+| `proofType`             | `string` | ✅       | `DOCUMENT`, `PHOTO`, `SIGNATURE`, or `MANUAL`                                   |
+| `proofImageUrl`         | `string` | ❌       | URL for an externally stored proof image; required when no document is sent     |
+| `latitude`              | `number` | ❌       | Courier latitude at completion time                                             |
+| `longitude`             | `number` | ❌       | Courier longitude at completion time                                            |
+| `notes`                 | `string` | ❌       | Required when the receiver is not the original recipient                        |
+
+At least one evidence field must be present: `receivedByDocument` or `proofImageUrl`.
 
 ---
 
@@ -271,18 +330,21 @@ pnpm test:cov
 - [x] Register couriers linked to worker accounts
 - [x] Create, update, and delete recipients and their addresses (with geocoding)
 - [x] Create, list, filter, and delete deliveries
-- [x] Transition delivery status: WAITING_PICKUP → IN_TRANSIT → COMPLETED
+- [x] Transition delivery status: CREATED → ASSIGNED → IN_TRANSIT → COMPLETED
+- [x] Complete deliveries with proof of delivery evidence
 - [x] Couriers query their nearby deliveries by coordinates and radius
 
 ### Business Rules
 
-- [x] Only admins can register couriers, manage recipients, and manage deliveries
-- [x] Only the assigned courier can start transit and complete a delivery
+- [x] Only admins can register couriers, manage recipients, create deliveries, assign couriers, and delete deliveries
+- [x] Only the assigned courier can pick up and complete a delivery
 - [x] A delivery can only be deleted when its status is `CREATED`
 - [x] A delivery must be linked to a recipient and a valid recipient address
 - [x] Recipient addresses are geocoded automatically on creation and update
 - [x] Delivery status transitions follow a strict order and cannot be skipped
 - [x] The nearby deliveries endpoint only returns deliveries assigned to the authenticated courier
+- [x] Completing a delivery creates proof of delivery and updates status atomically
+- [x] Proof of delivery records document matching and location validation signals without blocking real-world edge cases
 
 ### Non-functional Requirements
 

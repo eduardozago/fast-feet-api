@@ -1,56 +1,52 @@
 import { Either, left, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { DeliveriesRepository } from '../../repositories/deliveries-repository'
-import {
-  Delivery,
-  DeliveryStatus,
-} from '@/domain/delivery/enterprise/entities/delivery'
+import { Delivery } from '@/domain/delivery/enterprise/entities/delivery'
 import { DeliveryNotFoundError } from './errors/delivery-not-found-error'
-import { CannotStartTransitError } from './errors/cannot-start-transit-error'
+import { CannotAssignCourierError } from './errors/cannot-assign-courier-error'
 import { CouriersRepository } from '../../repositories/couriers-repository'
 import { CourierNotFoundError } from '../courier/errors/courier-not-found-error'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
-interface StartTransitUseCaseRequest {
+interface AssignCourierUseCaseRequest {
   deliveryId: string
   courierId: string
 }
 
-export type StartTransitUseCaseResponse = Either<
-  DeliveryNotFoundError | CannotStartTransitError | CourierNotFoundError,
+export type AssignCourierUseCaseResponse = Either<
+  DeliveryNotFoundError | CannotAssignCourierError | CourierNotFoundError,
   {
     delivery: Delivery
   }
 >
 
 @Injectable()
-export class StartTransitUseCase {
+export class AssignCourierUseCase {
   constructor(
     private deliveriesRepository: DeliveriesRepository,
-    private couriersRepository: CouriersRepository,
+    private courierRepository: CouriersRepository,
   ) {}
 
   async execute({
     deliveryId,
     courierId,
-  }: StartTransitUseCaseRequest): Promise<StartTransitUseCaseResponse> {
+  }: AssignCourierUseCaseRequest): Promise<AssignCourierUseCaseResponse> {
     const delivery = await this.deliveriesRepository.findById(deliveryId)
 
     if (!delivery) {
       return left(new DeliveryNotFoundError())
     }
 
-    if (delivery.status !== DeliveryStatus.WAITING_PICKUP) {
-      return left(new CannotStartTransitError(delivery.status))
+    if (!delivery.canAssignCourier()) {
+      return left(new CannotAssignCourierError(delivery.status))
     }
 
-    const courier = await this.couriersRepository.findById(courierId)
+    const courier = await this.courierRepository.findById(courierId)
 
     if (!courier) {
       return left(new CourierNotFoundError())
     }
 
-    delivery.inTransit(new UniqueEntityID(courierId))
+    delivery.assignCourier(courier.id)
 
     await this.deliveriesRepository.update(delivery)
 

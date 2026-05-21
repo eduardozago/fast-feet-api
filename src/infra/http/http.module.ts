@@ -22,11 +22,11 @@ import { DeleteRecipientAddressController } from './controllers/delivery/recipie
 import { DeleteRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/delete-recipient-address'
 import { CreateDeliveryController } from './controllers/delivery/delivery/create-delivery.controller'
 import { CreateDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/create-delivery'
-import { WaitForPickupController } from './controllers/delivery/delivery/wait-for-pickup.controller'
-import { WaitForPickupUseCase } from '@/domain/delivery/application/use-cases/delivery/wait-for-pickup'
-import { StartTransitController } from './controllers/delivery/delivery/start-transit.controller'
-import { StartTransitUseCase } from '@/domain/delivery/application/use-cases/delivery/start-transit'
-import { CompleteDeliveryController } from './controllers/delivery/delivery/complete-delivery.controller'
+import { AssignCourierController } from './controllers/delivery/delivery/assign-courier.controller'
+import { AssignCourierUseCase } from '@/domain/delivery/application/use-cases/delivery/assign-courier'
+import { PickUpDeliveryController } from './controllers/delivery/courier/pickup-delivery.controller'
+import { PickUpDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/pick-up-delivery'
+import { CompleteDeliveryController } from './controllers/delivery/courier/complete-delivery.controller'
 import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
 import { DeleteDeliveryController } from './controllers/delivery/delivery/delete-delivery.controller'
 import { DeleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/delete-delivery'
@@ -53,8 +53,8 @@ import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/
     UpdateRecipientAddressController,
     DeleteRecipientAddressController,
     CreateDeliveryController,
-    WaitForPickupController,
-    StartTransitController,
+    AssignCourierController,
+    PickUpDeliveryController,
     CompleteDeliveryController,
     DeleteDeliveryController,
     FetchCourierDeliveriesController,
@@ -74,8 +74,8 @@ import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/
     UpdateRecipientAddressUseCase,
     DeleteRecipientAddressUseCase,
     CreateDeliveryUseCase,
-    WaitForPickupUseCase,
-    StartTransitUseCase,
+    AssignCourierUseCase,
+    PickUpDeliveryUseCase,
     CompleteDeliveryUseCase,
     DeleteDeliveryUseCase,
     FetchCourierDeliveriesUseCase,

@@ -4,7 +4,7 @@ import { Entity } from '@/core/entities/entity'
 
 export const DeliveryStatus = {
   CREATED: 'CREATED',
-  WAITING_PICKUP: 'WAITING_PICKUP',
+  ASSIGNED: 'ASSIGNED',
   IN_TRANSIT: 'IN_TRANSIT',
   COMPLETED: 'COMPLETED',
 } as const
@@ -50,20 +50,32 @@ export class Delivery extends Entity<DeliveryProps> {
     this.props.updatedAt = new Date()
   }
 
-  waitForPickup() {
-    this.props.status = DeliveryStatus.WAITING_PICKUP
-    this.touch()
-  }
-
-  inTransit(courierId: UniqueEntityID) {
-    this.props.status = DeliveryStatus.IN_TRANSIT
+  assignCourier(courierId: UniqueEntityID) {
     this.props.courierId = courierId
+    this.props.status = DeliveryStatus.ASSIGNED
     this.touch()
   }
 
-  completed() {
+  pickUp() {
+    this.props.status = DeliveryStatus.IN_TRANSIT
+    this.touch()
+  }
+
+  complete() {
     this.props.status = DeliveryStatus.COMPLETED
     this.touch()
+  }
+
+  canAssignCourier() {
+    return this.props.status === DeliveryStatus.CREATED
+  }
+
+  canPickUp() {
+    return this.props.status === DeliveryStatus.ASSIGNED
+  }
+
+  canComplete() {
+    return this.props.status === DeliveryStatus.IN_TRANSIT
   }
 
   static create(

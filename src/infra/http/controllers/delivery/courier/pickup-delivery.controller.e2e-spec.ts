@@ -9,16 +9,18 @@ import {
 } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { CourierFactory } from 'test/factories/delivery/make-courier'
 import { DeliveryFactory } from 'test/factories/delivery/make-delivery'
 import { RecipientFactory } from 'test/factories/delivery/make-recipient'
 import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-address'
 import { AccountFactory } from 'test/factories/identity/make-account'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
-describe('Complete Delivery (E2E)', () => {
+describe('Pick Up Delivery (E2E)', () => {
   let app: NestFastifyApplication
   let prisma: PrismaService
   let accountFactory: AccountFactory
+  let courierFactory: CourierFactory
   let recipientFactory: RecipientFactory
   let recipientAddressFactory: RecipientAddressFactory
   let deliveryFactory: DeliveryFactory
@@ -29,6 +31,7 @@ describe('Complete Delivery (E2E)', () => {
       imports: [AppModule, DatabaseModule],
       providers: [
         AccountFactory,
+        CourierFactory,
         RecipientFactory,
         RecipientAddressFactory,
         DeliveryFactory,
@@ -47,6 +50,7 @@ describe('Complete Delivery (E2E)', () => {
     jwt = moduleRef.get(JwtService)
 
     accountFactory = moduleRef.get(AccountFactory)
+    courierFactory = moduleRef.get(CourierFactory)
     recipientFactory = moduleRef.get(RecipientFactory)
     recipientAddressFactory = moduleRef.get(RecipientAddressFactory)
     deliveryFactory = moduleRef.get(DeliveryFactory)
@@ -55,10 +59,10 @@ describe('Complete Delivery (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PATCH] /deliveries/:id/complete', async () => {
+  test('[PATCH] /couriers/me/deliveries/:deliveryId/pick-up', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
-      role: 'ADMIN',
+      role: 'WORKER',
     })
 
     const accessToken = jwt.sign({
@@ -72,14 +76,19 @@ describe('Complete Delivery (E2E)', () => {
       recipientId: recipient.id,
     })
 
+    const courier = await courierFactory.makePrismaCourier({
+      accountId: account.id,
+    })
+
     const delivery = await deliveryFactory.makePrismaDelivery({
       recipientId: recipient.id,
       recipientAddressId: address.id,
-      status: DeliveryStatus.IN_TRANSIT,
+      status: DeliveryStatus.ASSIGNED,
+      courierId: courier.id,
     })
 
     const response = await request(app.getHttpServer())
-      .patch(`/deliveries/${delivery.id.toString()}/complete`)
+      .patch(`/couriers/me/deliveries/${delivery.id.toString()}/pick-up`)
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(204)
@@ -91,6 +100,6 @@ describe('Complete Delivery (E2E)', () => {
     })
 
     expect(deliveryOnDatabase).toBeDefined()
-    expect(deliveryOnDatabase?.status).toBe('COMPLETED')
+    expect(deliveryOnDatabase?.status).toBe('IN_TRANSIT')
   })
 })
