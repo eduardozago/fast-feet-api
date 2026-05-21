@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   HttpCode,
   NotFoundException,
@@ -11,10 +12,13 @@ import {
 import { Roles } from '@/infra/auth/roles.decorator'
 import { DeliveryNotFoundError } from '@/domain/delivery/application/use-cases/delivery/errors/delivery-not-found-error'
 import { CompleteDeliveryUseCase } from '@/domain/delivery/application/use-cases/delivery/complete-delivery'
-import { CannotCompleteDeliveryError } from '@/domain/delivery/application/use-cases/delivery/errors/cannot-complete-delivery-error'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
+import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
+import { RecipientNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-not-found-error'
+import { RecipientAddressNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-address-not-found-error'
+import { ProofOfDeliveryAlreadyExistsError } from '@/domain/delivery/application/use-cases/delivery/errors/proof-of-delivery-already-exists-error'
 
 const completeDeliveryBodySchema = z.object({
   receivedByName: z.string().trim().min(1),
@@ -78,9 +82,12 @@ export class CompleteDeliveryController {
 
       switch (error.constructor) {
         case DeliveryNotFoundError:
+        case CourierNotFoundError:
+        case RecipientNotFoundError:
+        case RecipientAddressNotFoundError:
           throw new NotFoundException(error.message)
-        case CannotCompleteDeliveryError:
-          throw new BadRequestException(error.message)
+        case ProofOfDeliveryAlreadyExistsError:
+          throw new ConflictException(error.message)
         default:
           throw new BadRequestException(error.message)
       }
