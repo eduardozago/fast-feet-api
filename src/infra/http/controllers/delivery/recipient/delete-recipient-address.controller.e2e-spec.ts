@@ -46,7 +46,7 @@ describe('Delete Recipient Address (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[DELETE] /recipients/addresses/:addressId', async () => {
+  test('[DELETE] /recipients/:recipientId/addresses/:addressId', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'ADMIN',
@@ -64,10 +64,12 @@ describe('Delete Recipient Address (E2E)', () => {
     })
 
     const response = await request(app.getHttpServer())
-      .delete(`/recipients/addresses/${address.id.toString()}`)
+      .delete(
+        `/recipients/${recipient.id.toString()}/addresses/${address.id.toString()}`,
+      )
       .set('Authorization', `Bearer ${accessToken}`)
 
-    expect(response.statusCode).toBe(200)
+    expect(response.statusCode).toBe(204)
 
     const recipientOnDatabase = await prisma.recipientAddress.findUnique({
       where: {
