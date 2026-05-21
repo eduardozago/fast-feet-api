@@ -3,8 +3,8 @@ import {
   Body,
   Controller,
   NotFoundException,
+  Param,
   Post,
-  UsePipes,
 } from '@nestjs/common'
 import z from 'zod'
 import { ZodValidationPipe } from '../../../pipes/zod-validation-pipe'
@@ -13,7 +13,6 @@ import { CreateRecipientAddressUseCase } from '@/domain/delivery/application/use
 import { RecipientNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-not-found-error'
 
 const createRecipientAddressBodySchema = z.object({
-  recipientId: z.string().uuid(),
   street: z.string(),
   number: z.string(),
   neighborhood: z.string(),
@@ -29,17 +28,19 @@ type CreateRecipientAddressBodySchema = z.infer<
 >
 
 @Controller()
-@UsePipes(new ZodValidationPipe(createRecipientAddressBodySchema))
 export class CreateRecipientAddressController {
   constructor(
     private createRecipientAddressUseCase: CreateRecipientAddressUseCase,
   ) {}
 
-  @Post('/recipients/addresses')
+  @Post('/recipients/:recipientId/addresses')
   @Roles('ADMIN')
-  async handle(@Body() body: CreateRecipientAddressBodySchema) {
+  async handle(
+    @Param('recipientId') recipientId: string,
+    @Body(new ZodValidationPipe(createRecipientAddressBodySchema))
+    body: CreateRecipientAddressBodySchema,
+  ) {
     const {
-      recipientId,
       street,
       number,
       neighborhood,
