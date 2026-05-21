@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Delete,
+  HttpCode,
   NotFoundException,
   Param,
 } from '@nestjs/common'
@@ -15,10 +16,15 @@ export class DeleteRecipientAddressController {
     private deleteRecipientAddressUseCase: DeleteRecipientAddressUseCase,
   ) {}
 
-  @Delete('/recipients/addresses/:addressId')
+  @Delete('/recipients/:recipientId/addresses/:addressId')
   @Roles('ADMIN')
-  async handle(@Param('addressId') addressId: string) {
+  @HttpCode(204)
+  async handle(
+    @Param('recipientId') recipientId: string,
+    @Param('addressId') addressId: string,
+  ) {
     const result = await this.deleteRecipientAddressUseCase.execute({
+      recipientId,
       recipientAddressId: addressId,
     })
 

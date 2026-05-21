@@ -4,6 +4,7 @@ import { RecipientAddressesRepository } from '../../repositories/recipient-addre
 import { RecipientAddressNotFoundError } from './errors/recipient-address-not-found-error'
 
 interface DeleteRecipientAddressUseCaseRequest {
+  recipientId: string
   recipientAddressId: string
 }
 
@@ -19,12 +20,17 @@ export class DeleteRecipientAddressUseCase {
   ) {}
 
   async execute({
+    recipientId,
     recipientAddressId,
   }: DeleteRecipientAddressUseCaseRequest): Promise<DeleteRecipientAddressUseCaseResponse> {
     const recipientAddress =
       await this.recipientAddressesRepository.findById(recipientAddressId)
 
     if (!recipientAddress) {
+      return left(new RecipientAddressNotFoundError())
+    }
+
+    if (recipientAddress.recipientId.toString() !== recipientId) {
       return left(new RecipientAddressNotFoundError())
     }
 

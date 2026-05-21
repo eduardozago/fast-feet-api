@@ -103,6 +103,14 @@ export class RecipientAddress extends Entity<RecipientAddressProps> {
     this.props.postalCode = postalCode
   }
 
+  set latitude(latitude: number) {
+    this.props.latitude = latitude
+  }
+
+  set longitude(longitude: number) {
+    this.props.longitude = longitude
+  }
+
   static create(
     props: Optional<RecipientAddressProps, 'createdAt'>,
     id?: UniqueEntityID,

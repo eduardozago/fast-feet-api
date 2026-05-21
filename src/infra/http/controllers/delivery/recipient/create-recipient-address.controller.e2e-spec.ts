@@ -48,7 +48,7 @@ describe('Create Recipient Address (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[POST] /recipients/addresses', async () => {
+  test('[POST] /recipients/:recipientId/addresses', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'ADMIN',
@@ -66,10 +66,9 @@ describe('Create Recipient Address (E2E)', () => {
     })
 
     const response = await request(app.getHttpServer())
-      .post('/recipients/addresses')
+      .post(`/recipients/${recipient.id.toString()}/addresses`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        recipientId: recipient.id.toString(),
         street: address.street,
         number: address.number,
         complement: address.complement,

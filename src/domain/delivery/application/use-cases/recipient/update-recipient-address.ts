@@ -1,10 +1,12 @@
 import { Either, left, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
-import { RecipientAddress } from '@/domain/delivery/enterprise/entities/recipient-address'
 import { RecipientAddressesRepository } from '../../repositories/recipient-addresses-repository'
 import { RecipientAddressNotFoundError } from './errors/recipient-address-not-found-error'
+import { GeocodingService } from '../../location/geocoding-service'
+import { GeocodingServiceError } from '../errors/geocoding-service-error'
 
 interface UpdateRecipientAddressUseCaseRequest {
+  recipientId: string
   recipientAddressId: string
   street: string
   number: string
@@ -17,19 +19,19 @@ interface UpdateRecipientAddressUseCaseRequest {
 }
 
 export type UpdateRecipientAddressUseCaseResponse = Either<
-  RecipientAddressNotFoundError,
-  {
-    recipientAddress: RecipientAddress
-  }
+  RecipientAddressNotFoundError | GeocodingServiceError,
+  null
 >
 
 @Injectable()
 export class UpdateRecipientAddressUseCase {
   constructor(
     private recipientAddressesRepository: RecipientAddressesRepository,
+    private geocodingService: GeocodingService,
   ) {}
 
   async execute({
+    recipientId,
     recipientAddressId,
     street,
     number,
@@ -47,6 +49,26 @@ export class UpdateRecipientAddressUseCase {
       return left(new RecipientAddressNotFoundError())
     }
 
+    if (recipientAddress.recipientId.toString() !== recipientId) {
+      return left(new RecipientAddressNotFoundError())
+    }
+
+    const geocodingResult = await this.geocodingService.geocode({
+      street,
+      number,
+      neighborhood,
+      city,
+      state,
+      country,
+      postalCode,
+    })
+
+    if (geocodingResult.isLeft()) {
+      return left(geocodingResult.value)
+    }
+
+    const { latitude, longitude } = geocodingResult.value
+
     recipientAddress.street = street
     recipientAddress.number = number
     recipientAddress.neighborhood = neighborhood
@@ -55,11 +77,11 @@ export class UpdateRecipientAddressUseCase {
     recipientAddress.state = state
     recipientAddress.country = country
     recipientAddress.postalCode = postalCode
+    recipientAddress.latitude = latitude
+    recipientAddress.longitude = longitude
 
     await this.recipientAddressesRepository.update(recipientAddress)
 
-    return right({
-      recipientAddress,
-    })
+    return right(null)
   }
 }
