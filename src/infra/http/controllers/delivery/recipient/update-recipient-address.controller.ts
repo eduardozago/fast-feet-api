@@ -1,7 +1,9 @@
 import {
-  BadRequestException,
+  BadGatewayException,
   Body,
   Controller,
+  HttpCode,
+  InternalServerErrorException,
   NotFoundException,
   Param,
   Put,
@@ -11,6 +13,10 @@ import { ZodValidationPipe } from '../../../pipes/zod-validation-pipe'
 import { Roles } from '@/infra/auth/roles.decorator'
 import { UpdateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/update-recipient-address'
 import { RecipientAddressNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-address-not-found-error'
+import {
+  GeocodingConfigurationError,
+  GeocodingInvalidResponseError,
+} from '@/domain/delivery/application/use-cases/errors/geocoding-service-error'
 
 const updateRecipientAddressBodySchema = z.object({
   street: z.string(),
@@ -33,12 +39,14 @@ export class UpdateRecipientAddressController {
     private updateRecipientAddressUseCase: UpdateRecipientAddressUseCase,
   ) {}
 
-  @Put('/recipients/addresses/:addressId')
+  @Put('/recipients/:recipientId/addresses/:addressId')
   @Roles('ADMIN')
+  @HttpCode(204)
   async handle(
+    @Param('recipientId') recipientId: string,
+    @Param('addressId') addressId: string,
     @Body(new ZodValidationPipe(updateRecipientAddressBodySchema))
     body: UpdateRecipientAddressBodySchema,
-    @Param('addressId') addressId: string,
   ) {
     const {
       street,
@@ -52,6 +60,7 @@ export class UpdateRecipientAddressController {
     } = body
 
     const result = await this.updateRecipientAddressUseCase.execute({
+      recipientId,
       recipientAddressId: addressId,
       street,
       number,
@@ -66,12 +75,19 @@ export class UpdateRecipientAddressController {
     if (result.isLeft()) {
       const error = result.value
 
-      switch (error.constructor) {
-        case RecipientAddressNotFoundError:
-          throw new NotFoundException(error.message)
-        default:
-          throw new BadRequestException(error.message)
+      if (error instanceof RecipientAddressNotFoundError) {
+        throw new NotFoundException(error.message)
       }
+
+      if (error instanceof GeocodingConfigurationError) {
+        throw new InternalServerErrorException(error.message)
+      }
+
+      if (error instanceof GeocodingInvalidResponseError) {
+        throw new BadGatewayException(error.message)
+      }
+
+      throw new InternalServerErrorException(error.message)
     }
   }
 }
