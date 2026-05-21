@@ -105,6 +105,34 @@ enum DeliveryStatus {
   @@map("delivery_status")
 }
 
+enum RecipientRelationship {
+  RECIPIENT    @map("recipient")
+  FAMILY_MEMBER @map("family_member")
+  DOORMAN      @map("doorman")
+  RECEPTIONIST @map("receptionist")
+  NEIGHBOR     @map("neighbor")
+  OTHER        @map("other")
+
+  @@map("recipient_relationship")
+}
+
+enum ProofType {
+  DOCUMENT  @map("document")
+  PHOTO     @map("photo")
+  SIGNATURE @map("signature")
+  MANUAL    @map("manual")
+
+  @@map("proof_type")
+}
+
+enum LocationValidationStatus {
+  WITHIN_RANGE @map("within_range")
+  OUT_OF_RANGE @map("out_of_range")
+  UNAVAILABLE  @map("unavailable")
+
+  @@map("location_validation_status")
+}
+
 model Delivery {
   id                 String         @id @default(uuid())
   courierId          String?        @map("courier_id")
@@ -128,13 +156,13 @@ model ProofOfDelivery {
   courierId                   String   @map("courier_id")
   receivedByName              String   @map("received_by_name")
   receivedByDocument          String?  @map("received_by_document")
-  recipientRelationship       String   @map("recipient_relationship")
-  proofType                   String   @map("proof_type")
-  proofImageUrl               String?  @map("proof_image_url")
-  latitude                    Decimal? @db.Decimal(8, 6)
-  longitude                   Decimal? @db.Decimal(9, 6)
-  distanceFromDestinationInKm Decimal? @map("distance_from_destination_in_km")
-  locationValidationStatus    String   @map("location_validation_status")
+  recipientRelationship       RecipientRelationship    @map("recipient_relationship")
+  proofType                   ProofType                @map("proof_type")
+  proofImageUrl               String?                  @map("proof_image_url")
+  latitude                    Decimal?                 @db.Decimal(8, 6)
+  longitude                   Decimal?                 @db.Decimal(9, 6)
+  distanceFromDestinationInKm Decimal?                 @map("distance_from_destination_in_km")
+  locationValidationStatus    LocationValidationStatus @map("location_validation_status")
   documentMatchesRecipient    Boolean  @map("document_matches_recipient")
   notes                       String?
   createdAt                   DateTime @default(now()) @map("created_at")
