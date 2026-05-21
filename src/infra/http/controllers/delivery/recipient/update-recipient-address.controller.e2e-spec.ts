@@ -1,4 +1,5 @@
 import { AppModule } from '@/app.module'
+import { GeocodingService } from '@/domain/delivery/application/location/geocoding-service'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { JwtService } from '@nestjs/jwt'
@@ -11,6 +12,7 @@ import request from 'supertest'
 import { RecipientFactory } from 'test/factories/delivery/make-recipient'
 import { RecipientAddressFactory } from 'test/factories/delivery/make-recipient-address'
 import { AccountFactory } from 'test/factories/identity/make-account'
+import { FakeGeocodingService } from 'test/location/fake-geocoding-service'
 import { PrismaServiceE2E } from 'test/prisma-service-e2e'
 
 describe('Update Recipient Address (E2E)', () => {
@@ -28,6 +30,8 @@ describe('Update Recipient Address (E2E)', () => {
     })
       .overrideProvider(PrismaService)
       .useClass(PrismaServiceE2E)
+      .overrideProvider(GeocodingService)
+      .useClass(FakeGeocodingService)
       .compile()
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(
@@ -46,7 +50,7 @@ describe('Update Recipient Address (E2E)', () => {
     await app.getHttpAdapter().getInstance().ready()
   })
 
-  test('[PUT] /recipients/addresses/:addressId', async () => {
+  test('[PUT] /recipients/:recipientId/addresses/:addressId', async () => {
     const account = await accountFactory.makePrismaAccount({
       email: 'johndoe@example.com',
       role: 'ADMIN',
@@ -72,7 +76,9 @@ describe('Update Recipient Address (E2E)', () => {
     })
 
     const response = await request(app.getHttpServer())
-      .put(`/recipients/addresses/${address.id.toString()}`)
+      .put(
+        `/recipients/${recipient.id.toString()}/addresses/${address.id.toString()}`,
+      )
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         street: 'New Street',
@@ -85,7 +91,7 @@ describe('Update Recipient Address (E2E)', () => {
         postalCode: '87654-321',
       })
 
-    expect(response.statusCode).toBe(200)
+    expect(response.statusCode).toBe(204)
 
     const recipientOnDatabase = await prisma.recipientAddress.findUnique({
       where: {
