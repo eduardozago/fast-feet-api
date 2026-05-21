@@ -44,6 +44,7 @@ export class PrismaDeliveryCompletionRepository implements DeliveryCompletionRep
         },
         data: {
           status: deliveryData.status,
+          updatedAt: deliveryData.updatedAt,
         },
       })
     })
