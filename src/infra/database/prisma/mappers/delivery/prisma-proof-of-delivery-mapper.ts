@@ -1,10 +1,5 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import {
-  LocationValidationStatus,
-  ProofOfDelivery,
-  ProofType,
-  RecipientRelationship,
-} from '@/domain/delivery/enterprise/entities/proof-of-delivery'
+import { ProofOfDelivery } from '@/domain/delivery/enterprise/entities/proof-of-delivery'
 import {
   Prisma,
   ProofOfDelivery as PrismaProofOfDelivery,
@@ -18,16 +13,14 @@ export class PrismaProofOfDeliveryMapper {
         courierId: new UniqueEntityID(raw.courierId),
         receivedByName: raw.receivedByName,
         receivedByDocument: raw.receivedByDocument,
-        recipientRelationship:
-          raw.recipientRelationship as RecipientRelationship,
-        proofType: raw.proofType as ProofType,
+        recipientRelationship: raw.recipientRelationship,
+        proofType: raw.proofType,
         proofImageUrl: raw.proofImageUrl,
         latitude: raw.latitude?.toNumber() ?? null,
         longitude: raw.longitude?.toNumber() ?? null,
         distanceFromDestinationInKm:
           raw.distanceFromDestinationInKm?.toNumber() ?? null,
-        locationValidationStatus:
-          raw.locationValidationStatus as LocationValidationStatus,
+        locationValidationStatus: raw.locationValidationStatus,
         documentMatchesRecipient: raw.documentMatchesRecipient,
         notes: raw.notes,
         createdAt: raw.createdAt,
