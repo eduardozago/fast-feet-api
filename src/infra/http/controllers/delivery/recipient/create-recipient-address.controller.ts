@@ -1,7 +1,8 @@
 import {
-  BadRequestException,
+  BadGatewayException,
   Body,
   Controller,
+  InternalServerErrorException,
   NotFoundException,
   Param,
   Post,
@@ -11,6 +12,10 @@ import { ZodValidationPipe } from '../../../pipes/zod-validation-pipe'
 import { Roles } from '@/infra/auth/roles.decorator'
 import { CreateRecipientAddressUseCase } from '@/domain/delivery/application/use-cases/recipient/create-recipient-address'
 import { RecipientNotFoundError } from '@/domain/delivery/application/use-cases/recipient/errors/recipient-not-found-error'
+import {
+  GeocodingConfigurationError,
+  GeocodingInvalidResponseError,
+} from '@/domain/delivery/application/use-cases/errors/geocoding-service-error'
 
 const createRecipientAddressBodySchema = z.object({
   street: z.string(),
@@ -66,12 +71,19 @@ export class CreateRecipientAddressController {
     if (result.isLeft()) {
       const error = result.value
 
-      switch (error.constructor) {
-        case RecipientNotFoundError:
-          throw new NotFoundException(error.message)
-        default:
-          throw new BadRequestException(error.message)
+      if (error instanceof RecipientNotFoundError) {
+        throw new NotFoundException(error.message)
       }
+
+      if (error instanceof GeocodingConfigurationError) {
+        throw new InternalServerErrorException(error.message)
+      }
+
+      if (error instanceof GeocodingInvalidResponseError) {
+        throw new BadGatewayException(error.message)
+      }
+
+      throw new InternalServerErrorException(error.message)
     }
   }
 }
