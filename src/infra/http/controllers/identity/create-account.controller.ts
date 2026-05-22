@@ -11,6 +11,15 @@ import {
 import z from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
+import {
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiBadRequestResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger'
+import { CreateAccountDto } from '../../swagger/dtos/identity/create-account.dto'
 
 const createAccountBodySchema = z.object({
   email: z.string().email(),
@@ -20,6 +29,7 @@ const createAccountBodySchema = z.object({
 
 type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 
+@ApiTags('Identity')
 @Controller()
 @Public()
 @UsePipes(new ZodValidationPipe(createAccountBodySchema))
@@ -27,6 +37,19 @@ export class CreateAccountController {
   constructor(private createAccountUseCase: CreateAccountUseCase) {}
 
   @Post('/accounts')
+  @ApiOperation({
+    summary: 'Create an account',
+    description:
+      'Register a new account with either an `ADMIN` or `WORKER` role. The role defaults to `WORKER` if omitted. This endpoint is public and does not require authentication.',
+  })
+  @ApiBody({ type: CreateAccountDto })
+  @ApiCreatedResponse({ description: 'Account created successfully.' })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body or validation error.',
+  })
+  @ApiConflictResponse({
+    description: 'An account with this email address already exists.',
+  })
   async handle(@Body() body: CreateAccountBodySchema) {
     const { email, password, role } = body
 

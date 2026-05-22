@@ -13,6 +13,17 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
 import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
 import { Roles } from '@/infra/auth/roles.decorator'
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger'
+import { CourierDeliveriesListResponse } from '../../../swagger/responses/courier-deliveries-list.response'
 
 const fetchNearbyCourierDeliveriesQuerySchema = z.object({
   latitude: z.coerce
@@ -54,6 +65,8 @@ type FetchNearbyCourierDeliveriesQuerySchema = z.infer<
   typeof fetchNearbyCourierDeliveriesQuerySchema
 >
 
+@ApiTags('Couriers')
+@ApiBearerAuth('JWT')
 @Controller()
 export class FetchNearbyCourierDeliveriesController {
   constructor(
@@ -62,6 +75,55 @@ export class FetchNearbyCourierDeliveriesController {
 
   @Get('/couriers/me/deliveries/nearby')
   @Roles('WORKER')
+  @ApiOperation({
+    summary: 'List my nearby deliveries',
+    description:
+      "Returns paginated deliveries assigned to the authenticated courier whose recipient addresses fall within the specified radius of the courier's current position. Distance is calculated using the Haversine formula. Requires `WORKER` role.",
+  })
+  @ApiQuery({
+    name: 'latitude',
+    required: true,
+    type: Number,
+    description: "Courier's current latitude. Range: -90 to 90.",
+    example: -23.5505,
+  })
+  @ApiQuery({
+    name: 'longitude',
+    required: true,
+    type: Number,
+    description: "Courier's current longitude. Range: -180 to 180.",
+    example: -46.6333,
+  })
+  @ApiQuery({
+    name: 'radiusInKm',
+    required: true,
+    type: Number,
+    description: 'Search radius in kilometres. Maximum: 100 km.',
+    example: 5,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (1-based). Defaults to 1.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Maximum results per page. Defaults to 20, max 100.',
+    example: 20,
+  })
+  @ApiOkResponse({
+    description: 'List of nearby deliveries for the authenticated courier.',
+    type: CourierDeliveriesListResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token.' })
+  @ApiForbiddenResponse({ description: 'Requires WORKER role.' })
+  @ApiNotFoundResponse({
+    description: 'No courier profile linked to the authenticated account.',
+  })
   async handle(
     @Req() req: { user: UserPayload },
     @Query(new ZodValidationPipe(fetchNearbyCourierDeliveriesQuerySchema))

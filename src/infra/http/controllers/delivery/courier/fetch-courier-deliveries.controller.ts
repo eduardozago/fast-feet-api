@@ -13,6 +13,17 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
 import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
 import { Roles } from '@/infra/auth/roles.decorator'
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger'
+import { CourierDeliveriesListResponse } from '../../../swagger/responses/courier-deliveries-list.response'
 
 const fetchCourierDeliveriesQuerySchema = z.object({
   status: z.enum(['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED']).optional(),
@@ -37,6 +48,8 @@ type FetchCourierDeliveriesQuerySchema = z.infer<
   typeof fetchCourierDeliveriesQuerySchema
 >
 
+@ApiTags('Couriers')
+@ApiBearerAuth('JWT')
 @Controller()
 export class FetchCourierDeliveriesController {
   constructor(
@@ -45,6 +58,40 @@ export class FetchCourierDeliveriesController {
 
   @Get('/couriers/me/deliveries')
   @Roles('WORKER')
+  @ApiOperation({
+    summary: 'List my deliveries',
+    description:
+      'Retrieve a paginated list of deliveries assigned to the authenticated courier. Results can be filtered by delivery status. Requires `WORKER` role.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED'],
+    description: 'Filter deliveries by status. Omit to return all statuses.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (1-based). Defaults to 1.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Maximum results per page. Defaults to 20, max 100.',
+    example: 20,
+  })
+  @ApiOkResponse({
+    description: 'List of deliveries for the authenticated courier.',
+    type: CourierDeliveriesListResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token.' })
+  @ApiForbiddenResponse({ description: 'Requires WORKER role.' })
+  @ApiNotFoundResponse({
+    description: 'No courier profile linked to the authenticated account.',
+  })
   async handle(
     @Req() req: { user: UserPayload },
     @Query(new ZodValidationPipe(fetchCourierDeliveriesQuerySchema))
