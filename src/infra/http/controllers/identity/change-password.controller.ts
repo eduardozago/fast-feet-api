@@ -10,6 +10,16 @@ import z from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { InvalidCredentialsError } from '@/domain/identity/application/use-cases/errors/invalid-credentials-error'
 import { ChangePasswordUseCase } from '@/domain/identity/application/use-cases/change-password'
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger'
+import { ChangePasswordDto } from '../../swagger/dtos/identity/change-password.dto'
 
 const changePasswordBodySchema = z.object({
   email: z.string().email(),
@@ -21,12 +31,27 @@ const changePasswordBodySchema = z.object({
 
 type ChangePasswordBodySchema = z.infer<typeof changePasswordBodySchema>
 
+@ApiTags('Identity')
+@ApiBearerAuth('JWT')
 @Controller()
 @UsePipes(new ZodValidationPipe(changePasswordBodySchema))
 export class ChangePasswordController {
   constructor(private changePasswordUseCase: ChangePasswordUseCase) {}
 
   @Post('/change-password')
+  @ApiOperation({
+    summary: 'Change password',
+    description:
+      'Update the password for the authenticated account. Both the JWT token and the current password are required as a double-verification measure for this sensitive operation.',
+  })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiCreatedResponse({ description: 'Password changed successfully.' })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body or validation error.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid JWT token, or incorrect current password.',
+  })
   async handle(@Body() body: ChangePasswordBodySchema) {
     const { email, password, newPassword } = body
 
