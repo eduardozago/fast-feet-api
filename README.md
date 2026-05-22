@@ -28,19 +28,20 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 
 ## Tech Stack
 
-| Category         | Technology                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
-| Runtime          | [Node.js](https://nodejs.org/)                                                                    |
-| Framework        | [NestJS](https://nestjs.com/) + [Fastify](https://fastify.dev/)                                   |
-| Language         | [TypeScript](https://www.typescriptlang.org/)                                                     |
-| Database         | [PostgreSQL](https://www.postgresql.org/) via [Prisma ORM](https://www.prisma.io/)                |
-| Auth             | [JWT](https://jwt.io/) (RS256) + [Passport.js](https://www.passportjs.org/)                       |
-| Password Hashing | [Argon2](https://github.com/ranisalt/node-argon2)                                                 |
-| Validation       | [Zod](https://zod.dev/) + [zod-validation-error](https://github.com/causaly/zod-validation-error) |
-| Geocoding        | [Nominatim / OpenStreetMap](https://nominatim.org/) via `@nestjs/axios`                           |
-| Testing          | [Vitest](https://vitest.dev/) + [Supertest](https://github.com/ladjs/supertest)                   |
-| Containerization | [Docker](https://www.docker.com/) + Docker Compose                                                |
-| CI               | GitHub Actions                                                                                    |
+| Category         | Technology                                                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime          | [Node.js](https://nodejs.org/)                                                                                                   |
+| Framework        | [NestJS](https://nestjs.com/) + [Fastify](https://fastify.dev/)                                                                  |
+| Language         | [TypeScript](https://www.typescriptlang.org/)                                                                                    |
+| Database         | [PostgreSQL](https://www.postgresql.org/) via [Prisma ORM](https://www.prisma.io/)                                               |
+| Auth             | [JWT](https://jwt.io/) (RS256) + [Passport.js](https://www.passportjs.org/)                                                      |
+| Password Hashing | [Argon2](https://github.com/ranisalt/node-argon2)                                                                                |
+| Validation       | [Zod](https://zod.dev/) + [zod-validation-error](https://github.com/causaly/zod-validation-error)                                |
+| API Docs         | [OpenAPI](https://www.openapis.org/) via [Swagger](https://docs.nestjs.com/openapi/introduction) + [Scalar](https://scalar.com/) |
+| Geocoding        | [Nominatim / OpenStreetMap](https://nominatim.org/) via `@nestjs/axios`                                                          |
+| Testing          | [Vitest](https://vitest.dev/) + [Supertest](https://github.com/ladjs/supertest)                                                  |
+| Containerization | [Docker](https://www.docker.com/) + Docker Compose                                                                               |
+| CI               | GitHub Actions                                                                                                                   |
 
 ---
 
@@ -54,6 +55,7 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 - **Proof of delivery** — couriers complete deliveries by submitting receiver evidence, optional GPS coordinates, and a proof image URL reference
 - **Nearby deliveries** — couriers query their own pending deliveries within a configurable radius (km) using the **Haversine formula** and paginated results
 - **Role-based access control** — global `JwtAuthGuard` + `RolesGuard`; admins manage the platform, couriers act only on their own deliveries
+- **Interactive API documentation** — OpenAPI schema generated from NestJS Swagger decorators and rendered with Scalar
 - **CI pipelines** — unit tests and E2E tests run automatically on every pull request via GitHub Actions
 
 ---
@@ -112,6 +114,18 @@ The geocoding service is abstracted behind a `GeocodingService` interface in the
 ### Zod for runtime validation at the HTTP boundary
 
 Zod schemas are defined in each controller and piped through a custom `ZodValidationPipe`. This keeps validation co-located with the route handler, provides descriptive error messages via `zod-validation-error`, and avoids the overhead of class-transformer/class-validator decorators throughout the codebase.
+
+### OpenAPI documentation with Scalar
+
+The API exposes a generated OpenAPI specification using `@nestjs/swagger`, with Scalar providing the interactive reference UI. The generated contract documents authentication, role requirements, request bodies, query parameters, path parameters, response models, and common error responses.
+
+The implementation intentionally separates runtime validation from documentation:
+
+- **Zod schemas** validate real incoming HTTP data at runtime.
+- **Swagger DTOs and response classes** describe the public API contract for OpenAPI generation.
+- **Scalar** consumes the generated JSON spec and provides a clean interface for exploring and testing endpoints.
+
+**Trade-off:** Zod and Swagger DTOs duplicate some request shape definitions. This is acceptable here because Zod remains the source of runtime validation, while explicit Swagger classes keep the public contract readable and presentation-focused. In a larger production codebase, this could be reduced with a schema-to-OpenAPI generation strategy.
 
 ### Isolated E2E test schemas
 
@@ -252,6 +266,20 @@ At least one evidence field must be present: `receivedByDocument` or `proofImage
 
 ---
 
+## API Documentation
+
+After starting the development server, the API documentation is available at:
+
+| Resource             | URL                               |
+| -------------------- | --------------------------------- |
+| Scalar API reference | `http://localhost:3333/reference` |
+| OpenAPI JSON schema  | `http://localhost:3333/docs/json` |
+| OpenAPI YAML schema  | `http://localhost:3333/docs/yaml` |
+
+The documentation includes grouped endpoints for identity, couriers, recipients, and deliveries, plus Bearer JWT authentication support. Authenticate with `POST /sessions`, then use the returned access token in the Scalar reference as `Bearer <token>`.
+
+---
+
 ## Getting Started
 
 **Requirements:** Node.js 22+, pnpm, Docker and Docker Compose.
@@ -333,6 +361,7 @@ pnpm test:cov
 - [x] Transition delivery status: CREATED → ASSIGNED → IN_TRANSIT → COMPLETED
 - [x] Complete deliveries with proof of delivery evidence
 - [x] Couriers query their nearby deliveries by coordinates and radius
+- [x] Explore the API through generated OpenAPI documentation and Scalar reference UI
 
 ### Business Rules
 
@@ -355,6 +384,7 @@ pnpm test:cov
 - [x] Unit and E2E tests with Vitest + isolated test schemas
 - [x] CI pipelines (unit + E2E) on every pull request via GitHub Actions
 - [x] Input validation at the HTTP boundary using Zod schemas
+- [x] OpenAPI contract generated from annotated controllers, DTOs, and response models
 
 ---
 
