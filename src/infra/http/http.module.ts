@@ -37,10 +37,12 @@ import { FetchNearbyCourierDeliveriesController } from './controllers/delivery/c
 import { FetchNearbyCourierDeliveriesUseCase } from '@/domain/delivery/application/use-cases/courier/fetch-nearby-courier-deliveries'
 import { FetchDeliveriesController } from './controllers/delivery/delivery/fetch-deliveries.controller'
 import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-deliveries'
+import { HealthController } from './controllers/health.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, GatewaysModule, LocationModule],
   controllers: [
+    HealthController,
     // Identity
     CreateAccountController,
     AuthenticateController,
