@@ -48,6 +48,7 @@ describe('Authenticate (E2E)', () => {
     expect(response.statusCode).toBe(201)
     expect(response.body).toEqual(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         access_token: expect.any(String),
       }),
     )
