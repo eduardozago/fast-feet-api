@@ -16,7 +16,6 @@ export class HealthController {
         status: 'ok',
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || 'unknown',
       }
     } catch {
       throw new HttpException(
