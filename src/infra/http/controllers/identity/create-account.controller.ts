@@ -35,7 +35,7 @@ const createAccountBodySchema = z.object({
 type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 
 @ApiTags('Identity')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT')
 @Controller()
 @Roles('ADMIN')
 @UsePipes(new ZodValidationPipe(createAccountBodySchema))
