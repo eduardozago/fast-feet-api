@@ -2,8 +2,10 @@
 
 > A portfolio-grade RESTful API for a **delivery management system**, built with clean architecture, Domain-Driven Design (DDD), and geospatial capabilities.
 
-[![Unit Tests](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-unit-tests.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-unit-tests.yml)
-[![E2E Tests](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-e2e-tests.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/run-e2e-tests.yml)
+[![CI](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml)
+[![CD](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml)
+[![Live API](https://img.shields.io/badge/Live_API-Cloud_Run-4285F4?style=flat-square&logo=google-cloud&logoColor=white)](https://fast-feet-api-560723623894.us-central1.run.app)
+[![API Docs](https://img.shields.io/badge/API_Docs-Scalar-6C3FC5?style=flat-square)](https://fast-feet-api-560723623894.us-central1.run.app/reference)
 
 ## Table of Contents
 
@@ -12,7 +14,10 @@
 - [Features](#features)
 - [Architecture](#architecture)
 - [Technical Decisions & Trade-offs](#technical-decisions--trade-offs)
+- [Cloud Deployment](#cloud-deployment)
+- [Infrastructure Setup](docs/deployment.md)
 - [API Endpoints](#api-endpoints)
+- [API Documentation](#api-documentation)
 - [Getting Started](#getting-started)
 - [Tests](#tests)
 - [Application Rules](#application-rules)
@@ -22,7 +27,7 @@
 
 ## Overview
 
-Fast Feet API manages the full lifecycle of package deliveries — from account creation and courier registration, through recipient address geocoding, to real-time nearby delivery queries based on geolocation. It was designed as a portfolio project to demonstrate production-inspired backend engineering practices.
+Fast Feet API manages the full lifecycle of package deliveries — from account creation and courier registration, through recipient address geocoding, to real-time nearby delivery queries based on geolocation. The API is live on Google Cloud Run, deployed through a fully automated CI/CD pipeline, and built with the same engineering standards applied in production systems.
 
 ---
 
@@ -41,7 +46,7 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 | Geocoding        | [Nominatim / OpenStreetMap](https://nominatim.org/) via `@nestjs/axios`                                                          |
 | Testing          | [Vitest](https://vitest.dev/) + [Supertest](https://github.com/ladjs/supertest)                                                  |
 | Containerization | [Docker](https://www.docker.com/) + Docker Compose                                                                               |
-| CI               | GitHub Actions                                                                                                                   |
+| Cloud & CI/CD    | Google Cloud Run + Artifact Registry + Secret Manager + GitHub Actions                                                           |
 
 ---
 
@@ -56,7 +61,8 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 - **Nearby deliveries** — couriers query their own pending deliveries within a configurable radius (km) using the **Haversine formula** and paginated results
 - **Role-based access control** — global `JwtAuthGuard` + `RolesGuard`; admins manage the platform, couriers act only on their own deliveries
 - **Interactive API documentation** — OpenAPI schema generated from NestJS Swagger decorators and rendered with Scalar
-- **CI pipelines** — unit tests and E2E tests run automatically on every pull request via GitHub Actions
+- **Production deployment** — containerized API deployed to Google Cloud Run with GitHub Actions, Artifact Registry, Secret Manager, and keyless authentication
+- **Safe migration workflow** — database migrations run as a separate release task before the API revision is deployed
 
 ---
 
@@ -127,6 +133,12 @@ The implementation intentionally separates runtime validation from documentation
 
 **Trade-off:** Zod and Swagger DTOs duplicate some request shape definitions. This is acceptable here because Zod remains the source of runtime validation, while explicit Swagger classes keep the public contract readable and presentation-focused. In a larger production codebase, this could be reduced with a schema-to-OpenAPI generation strategy.
 
+### Cloud Run deployment with release-safe migrations
+
+The API is deployed to Google Cloud Run from a multi-stage Docker image. The CI/CD pipeline builds immutable images tagged with the Git commit SHA, pushes them to Artifact Registry, runs Prisma migrations through a dedicated Cloud Run Job, and deploys the API only after the migration job succeeds.
+
+This approach keeps the runtime container focused on serving HTTP traffic while treating database migrations as an explicit release step. It avoids running migrations during application startup, which would be risky in autoscaled environments where multiple instances can start concurrently.
+
 ### Isolated E2E test schemas
 
 Each E2E test run creates a unique PostgreSQL schema (`test_<uuid>`) via the `PrismaServiceE2E` adapter and `db push`. This enables fully parallel test execution without test data collisions and cleans up automatically after each suite.
@@ -181,6 +193,35 @@ This is a pragmatic real-world approach: the system captures audit evidence with
 ### Atomic delivery completion
 
 Creating the proof of delivery and updating the delivery status are persisted in one transaction through a delivery completion persistence abstraction. The current abstraction is intentionally application-specific because completion changes two persisted models (`ProofOfDelivery` and `Delivery`) and must succeed or fail as one unit.
+
+---
+
+## Cloud Deployment
+
+The project is deployed on **Google Cloud Run** with a GitHub Actions pipeline designed around traceability, secret safety, and controlled database changes.
+
+| Concern        | Implementation                                                                |
+| -------------- | ----------------------------------------------------------------------------- |
+| Runtime        | Cloud Run managed service on port `8080`                                      |
+| Registry       | Google Artifact Registry                                                      |
+| Images         | Multi-stage Docker builds tagged with the Git commit SHA                      |
+| Migrations     | Dedicated Cloud Run Job running `prisma migrate deploy` before API deployment |
+| Secrets        | Runtime injection from Google Secret Manager                                  |
+| Authentication | Workload Identity Federation, avoiding long-lived GCP keys in GitHub          |
+| Scaling        | Scale-to-zero with capped maximum instances for predictable portfolio costs   |
+| Observability  | Cloud Logging through Cloud Run                                               |
+
+The deployment flow is:
+
+```text
+tests → build runtime image → build migration image → push images → run migration job → deploy Cloud Run revision
+```
+
+The runtime image contains only compiled code and production dependencies, while the migration image keeps the Prisma CLI available for release tasks. This keeps application startup deterministic and avoids running migrations inside autoscaled API instances.
+
+GitHub authenticates to GCP through **Workload Identity Federation**, exchanging short-lived OIDC credentials instead of storing a service account key in repository secrets. The deployment service account is scoped to the required responsibilities: pushing images, deploying Cloud Run services/jobs, acting as the runtime service account, and accessing deployment secrets.
+
+For the full infrastructure setup guide — including GCP prerequisites, IAM configuration, Workload Identity Federation setup, GitHub secrets, and rollback procedures — see [docs/deployment.md](docs/deployment.md).
 
 ---
 
@@ -306,10 +347,35 @@ docker compose up -d
 pnpm prisma generate
 pnpm prisma migrate deploy
 
-# 6. Start the development server
+# 6. (Optional) Seed demo data
+pnpm db:seed
+
+# 7. Start the development server
 pnpm start:dev
 # Server will be available at http://localhost:3333
 ```
+
+### Demo Data
+
+The seed script (`pnpm db:seed`) creates a ready-to-explore dataset covering every delivery lifecycle stage:
+
+| Role     | Email                  | Password       |
+| -------- | ---------------------- | -------------- |
+| `ADMIN`  | `admin@fastfeet.com`   | `Admin@2024`   |
+| `WORKER` | `courier@fastfeet.com` | `Courier@2024` |
+
+**Deliveries seeded** — courier: James Walker
+
+| Status       | Recipient     | Address                       |
+| ------------ | ------------- | ----------------------------- |
+| `CREATED`    | Alice Johnson | 350 5th Avenue, New York, NY  |
+| `ASSIGNED`   | Alice Johnson | 350 5th Avenue, New York, NY  |
+| `IN_TRANSIT` | Robert Carter | 200 Park Avenue, New York, NY |
+| `COMPLETED`  | Robert Carter | 200 Park Avenue, New York, NY |
+
+The `COMPLETED` delivery includes a full proof of delivery record with GPS coordinates, document match validation, and `WITHIN_RANGE` location status.
+
+The seed is idempotent — running it multiple times resets the demo records to their original state without affecting other data in the database.
 
 ### Generating RS256 keys
 
@@ -383,6 +449,9 @@ pnpm test:cov
 - [x] Containerized database with Docker Compose
 - [x] Unit and E2E tests with Vitest + isolated test schemas
 - [x] CI pipelines (unit + E2E) on every pull request via GitHub Actions
+- [x] CD pipeline deploying immutable Docker images to Google Cloud Run
+- [x] Database migrations executed as a separate Cloud Run Job before API deployment
+- [x] Secrets managed through Google Secret Manager and keyless GitHub → GCP authentication
 - [x] Input validation at the HTTP boundary using Zod schemas
 - [x] OpenAPI contract generated from annotated controllers, DTOs, and response models
 
@@ -393,7 +462,7 @@ pnpm test:cov
 ```
 fast-feet-api/
 ├── .github/
-│   └── workflows/          # CI: run-unit-tests.yml, run-e2e-tests.yml
+│   └── workflows/          # CI, CD, and reusable test workflows
 ├── prisma/
 │   ├── schema.prisma        # Database schema (Account, Courier, Recipient, Delivery)
 │   └── migrations/          # Versioned SQL migrations
