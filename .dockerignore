@@ -3,6 +3,8 @@ dist
 data
 coverage
 generated
+docs
+test
 .env
 .env.*
 Dockerfile
@@ -12,4 +14,3 @@ Dockerfile
 .github
 src/**/*.spec.ts
 src/**/*.e2e-spec.ts
-test
