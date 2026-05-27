@@ -38,9 +38,17 @@ import { FetchNearbyCourierDeliveriesUseCase } from '@/domain/delivery/applicati
 import { FetchDeliveriesController } from './controllers/delivery/delivery/fetch-deliveries.controller'
 import { FetchDeliveriesUseCase } from '@/domain/delivery/application/use-cases/delivery/fetch-deliveries'
 import { HealthController } from './controllers/health.controller'
+import { BootstrapAdminService } from '../bootstrap/bootstrap-admin.service'
+import { EnvModule } from '../env/env.module'
 
 @Module({
-  imports: [DatabaseModule, CryptographyModule, GatewaysModule, LocationModule],
+  imports: [
+    DatabaseModule,
+    CryptographyModule,
+    GatewaysModule,
+    LocationModule,
+    EnvModule,
+  ],
   controllers: [
     HealthController,
     // Identity
@@ -64,6 +72,8 @@ import { HealthController } from './controllers/health.controller'
     FetchDeliveriesController,
   ],
   providers: [
+    // Bootstrap
+    BootstrapAdminService,
     // Identity
     CreateAccountUseCase,
     AuthenticateUseCase,
