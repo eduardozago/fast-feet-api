@@ -3,7 +3,7 @@
 > A portfolio-grade RESTful API for a **delivery management system**, built with clean architecture, Domain-Driven Design (DDD), and geospatial capabilities.
 
 [![CI](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml)
-[![CD](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml)
+[![CD](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml/badge.svg?branch=master)](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml)
 [![Live API](https://img.shields.io/badge/Live_API-Cloud_Run-4285F4?style=flat-square&logo=google-cloud&logoColor=white)](https://fast-feet-api-560723623894.us-central1.run.app)
 [![API Docs](https://img.shields.io/badge/API_Docs-Scalar-6C3FC5?style=flat-square)](https://fast-feet-api-560723623894.us-central1.run.app/reference)
 
