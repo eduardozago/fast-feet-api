@@ -1,0 +1,16 @@
+node_modules
+dist
+data
+coverage
+generated
+docs
+test
+.env
+.env.*
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.github
+src/**/*.spec.ts
+src/**/*.e2e-spec.ts

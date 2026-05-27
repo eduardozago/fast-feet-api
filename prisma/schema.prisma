@@ -106,12 +106,12 @@ enum DeliveryStatus {
 }
 
 enum RecipientRelationship {
-  RECIPIENT    @map("recipient")
+  RECIPIENT     @map("recipient")
   FAMILY_MEMBER @map("family_member")
-  DOORMAN      @map("doorman")
-  RECEPTIONIST @map("receptionist")
-  NEIGHBOR     @map("neighbor")
-  OTHER        @map("other")
+  DOORMAN       @map("doorman")
+  RECEPTIONIST  @map("receptionist")
+  NEIGHBOR      @map("neighbor")
+  OTHER         @map("other")
 
   @@map("recipient_relationship")
 }
@@ -151,11 +151,11 @@ model Delivery {
 }
 
 model ProofOfDelivery {
-  id                          String   @id @default(uuid())
-  deliveryId                  String   @unique @map("delivery_id")
-  courierId                   String   @map("courier_id")
-  receivedByName              String   @map("received_by_name")
-  receivedByDocument          String?  @map("received_by_document")
+  id                          String                   @id @default(uuid())
+  deliveryId                  String                   @unique @map("delivery_id")
+  courierId                   String                   @map("courier_id")
+  receivedByName              String                   @map("received_by_name")
+  receivedByDocument          String?                  @map("received_by_document")
   recipientRelationship       RecipientRelationship    @map("recipient_relationship")
   proofType                   ProofType                @map("proof_type")
   proofImageUrl               String?                  @map("proof_image_url")
@@ -163,9 +163,9 @@ model ProofOfDelivery {
   longitude                   Decimal?                 @db.Decimal(9, 6)
   distanceFromDestinationInKm Decimal?                 @map("distance_from_destination_in_km")
   locationValidationStatus    LocationValidationStatus @map("location_validation_status")
-  documentMatchesRecipient    Boolean  @map("document_matches_recipient")
+  documentMatchesRecipient    Boolean                  @map("document_matches_recipient")
   notes                       String?
-  createdAt                   DateTime @default(now()) @map("created_at")
+  createdAt                   DateTime                 @default(now()) @map("created_at")
 
   delivery Delivery @relation(fields: [deliveryId], references: [id])
   courier  Courier  @relation(fields: [courierId], references: [id])
