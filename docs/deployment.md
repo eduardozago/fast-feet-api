@@ -122,6 +122,18 @@ echo -n "FastFeet/1.0 (github.com/eduardozago/fast-feet-api)" | \
   gcloud secrets create NOMINATIM_API_USER_AGENT --data-file=- --project $PROJECT
 ```
 
+#### Optional: bootstrap admin secrets
+
+These two secrets are only needed once to provision the initial `ADMIN` account. After the first deploy, disable or delete them — the `BootstrapAdminService` is a no-op when the account already exists.
+
+```bash
+echo -n "admin@yourdomain.com" | \
+  gcloud secrets create BOOTSTRAP_ADMIN_EMAIL --data-file=- --project $PROJECT
+
+echo -n "YourSecurePassword" | \
+  gcloud secrets create BOOTSTRAP_ADMIN_PASSWORD --data-file=- --project $PROJECT
+```
+
 ---
 
 ## GitHub Secrets
@@ -204,6 +216,63 @@ git push (master)
 ```
 
 Migrations **must complete successfully** before the API revision is deployed. If the migration job fails, the pipeline stops and the current API revision keeps serving traffic.
+
+---
+
+## Provisioning the First Admin
+
+`POST /accounts` requires an authenticated `ADMIN`, so the first admin cannot be created through the API. The `BootstrapAdminService` solves this by reading `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` from the environment on startup and calling `CreateAccountUseCase` once.
+
+This is a **one-time, out-of-band step** — these secrets are intentionally excluded from the automated CD pipeline to avoid them being present after initial setup.
+
+### Steps
+
+**1.** Create the bootstrap secrets in Secret Manager (if not done in the prerequisites):
+
+```bash
+PROJECT=fast-feet-497419
+
+echo -n "admin@yourdomain.com" | \
+  gcloud secrets create BOOTSTRAP_ADMIN_EMAIL --data-file=- --project $PROJECT
+
+echo -n "YourSecurePassword" | \
+  gcloud secrets create BOOTSTRAP_ADMIN_PASSWORD --data-file=- --project $PROJECT
+```
+
+**2.** Deploy the service once with the bootstrap secrets injected, after the first migration has run:
+
+```bash
+gcloud run deploy fast-feet-api \
+  --image     us-central1-docker.pkg.dev/fast-feet-497419/portfolio/fast-feet-api:<git-sha> \
+  --region    us-central1 \
+  --project   fast-feet-497419 \
+  --platform  managed \
+  --allow-unauthenticated \
+  --port      8080 \
+  --memory    512Mi \
+  --cpu       1 \
+  --min-instances 0 \
+  --max-instances 3 \
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest,JWT_PRIVATE_KEY=JWT_PRIVATE_KEY:latest,JWT_PUBLIC_KEY=JWT_PUBLIC_KEY:latest,NOMINATIM_API_URL=NOMINATIM_API_URL:latest,NOMINATIM_API_USER_AGENT=NOMINATIM_API_USER_AGENT:latest,BOOTSTRAP_ADMIN_EMAIL=BOOTSTRAP_ADMIN_EMAIL:latest,BOOTSTRAP_ADMIN_PASSWORD=BOOTSTRAP_ADMIN_PASSWORD:latest"
+```
+
+On startup, `BootstrapAdminService` reads the vars, calls `CreateAccountUseCase`, and logs `Bootstrap admin provisioned: <email>`.
+
+**3.** Disable or delete the bootstrap secrets — they are no longer needed:
+
+```bash
+# Preferred: disable the secret versions (preserves audit history)
+gcloud secrets versions disable 1 --secret BOOTSTRAP_ADMIN_EMAIL --project $PROJECT
+gcloud secrets versions disable 1 --secret BOOTSTRAP_ADMIN_PASSWORD --project $PROJECT
+
+# Or delete them entirely
+gcloud secrets delete BOOTSTRAP_ADMIN_EMAIL --project $PROJECT
+gcloud secrets delete BOOTSTRAP_ADMIN_PASSWORD --project $PROJECT
+```
+
+**4.** All subsequent deployments go through the normal CD pipeline, which does not include the bootstrap secrets. The `BootstrapAdminService` is a silent no-op when the vars are absent.
+
+> **Idempotent**: if you accidentally deploy with the bootstrap secrets again after the admin exists, `BootstrapAdminService` detects `AccountAlreadyExistsError` and skips silently — no duplicate is created.
 
 ---
 
