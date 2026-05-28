@@ -1,0 +1,17 @@
+{
+  "release-type": "node",
+  "packages": {
+    ".": {
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance" },
+        { "type": "refactor", "section": "Refactoring" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "ci", "section": "Infrastructure" },
+        { "type": "chore", "hidden": true },
+        { "type": "test", "hidden": true }
+      ]
+    }
+  }
+}
