@@ -7,6 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/eduardozago/fast-feet-api?style=flat-square&label=Release)](https://github.com/eduardozago/fast-feet-api/releases)
 [![Live API](https://img.shields.io/badge/Live_API-Cloud_Run-4285F4?style=flat-square&logo=google-cloud&logoColor=white)](https://fast-feet-api-560723623894.us-central1.run.app)
 [![API Docs](https://img.shields.io/badge/API_Docs-Scalar-6C3FC5?style=flat-square)](https://fast-feet-api-560723623894.us-central1.run.app/reference)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 ## Table of Contents
 
@@ -23,6 +24,7 @@
 - [Tests](#tests)
 - [Application Rules](#application-rules)
 - [Project Structure](#project-structure)
+- [License](#license)
 
 ---
 
@@ -526,3 +528,9 @@ fast-feet-api/
     ├── location/            # FakeGeocodingService
     └── repositories/        # In-memory repository implementations
 ```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
