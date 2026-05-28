@@ -3,9 +3,11 @@
 > A portfolio-grade RESTful API for a **delivery management system**, built with clean architecture, Domain-Driven Design (DDD), and geospatial capabilities.
 
 [![CI](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardozago/fast-feet-api/actions/workflows/ci.yml)
-[![CD](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml/badge.svg?branch=master)](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml)
+[![CD](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml/badge.svg?event=release)](https://github.com/eduardozago/fast-feet-api/actions/workflows/cd.yml)
+[![Release](https://img.shields.io/github/v/release/eduardozago/fast-feet-api?style=flat-square&label=Release)](https://github.com/eduardozago/fast-feet-api/releases)
 [![Live API](https://img.shields.io/badge/Live_API-Cloud_Run-4285F4?style=flat-square&logo=google-cloud&logoColor=white)](https://fast-feet-api-560723623894.us-central1.run.app)
 [![API Docs](https://img.shields.io/badge/API_Docs-Scalar-6C3FC5?style=flat-square)](https://fast-feet-api-560723623894.us-central1.run.app/reference)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 ## Table of Contents
 
@@ -22,6 +24,7 @@
 - [Tests](#tests)
 - [Application Rules](#application-rules)
 - [Project Structure](#project-structure)
+- [License](#license)
 
 ---
 
@@ -236,6 +239,7 @@ The project is deployed on **Google Cloud Run** with a GitHub Actions pipeline d
 | Migrations     | Dedicated Cloud Run Job running `prisma migrate deploy` before API deployment |
 | Secrets        | Runtime injection from Google Secret Manager                                  |
 | Authentication | Workload Identity Federation, avoiding long-lived GCP keys in GitHub          |
+| Versioning     | Automated semantic versioning and GitHub Releases via release-please          |
 | Scaling        | Scale-to-zero with capped maximum instances for predictable portfolio costs   |
 | Observability  | Cloud Logging through Cloud Run                                               |
 
@@ -483,7 +487,8 @@ pnpm test:cov
 - [x] Containerized database with Docker Compose
 - [x] Unit and E2E tests with Vitest + isolated test schemas
 - [x] CI pipelines (unit + E2E) on every pull request via GitHub Actions
-- [x] CD pipeline deploying immutable Docker images to Google Cloud Run
+- [x] CD pipeline deploying immutable Docker images to Google Cloud Run on every GitHub Release
+- [x] Automated semantic versioning and GitHub Releases via release-please (conventional commits)
 - [x] Database migrations executed as a separate Cloud Run Job before API deployment
 - [x] Secrets managed through Google Secret Manager and keyless GitHub → GCP authentication
 - [x] Input validation at the HTTP boundary using Zod schemas
@@ -497,7 +502,7 @@ pnpm test:cov
 ```
 fast-feet-api/
 ├── .github/
-│   └── workflows/          # CI, CD, and reusable test workflows
+│   └── workflows/          # CI, CD, release-please, and reusable test workflows
 ├── prisma/
 │   ├── schema.prisma        # Database schema (Account, Courier, Recipient, Delivery)
 │   └── migrations/          # Versioned SQL migrations
@@ -523,3 +528,9 @@ fast-feet-api/
     ├── location/            # FakeGeocodingService
     └── repositories/        # In-memory repository implementations
 ```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
