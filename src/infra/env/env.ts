@@ -7,6 +7,8 @@ export const envSchema = z.object({
   PORT: z.coerce.number().optional().default(8080),
   NOMINATIM_API_URL: z.string().url(),
   NOMINATIM_API_USER_AGENT: z.string(),
+  BOOTSTRAP_ADMIN_EMAIL: z.string().email().optional(),
+  BOOTSTRAP_ADMIN_PASSWORD: z.string().min(8).optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

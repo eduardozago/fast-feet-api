@@ -8,6 +8,7 @@ import {
   Param,
   Put,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import z from 'zod'
 import { ZodValidationPipe } from '../../../pipes/zod-validation-pipe'
 import { Roles } from '@/infra/auth/roles.decorator'
@@ -28,6 +29,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
 import { RecipientAddressDto } from '../../../swagger/dtos/recipient/recipient-address.dto'
@@ -50,6 +52,7 @@ type UpdateRecipientAddressBodySchema = z.infer<
 @ApiTags('Recipients')
 @ApiBearerAuth('JWT')
 @Controller()
+@Throttle({ default: { ttl: 60000, limit: 20 } })
 export class UpdateRecipientAddressController {
   constructor(
     private updateRecipientAddressUseCase: UpdateRecipientAddressUseCase,
@@ -90,6 +93,10 @@ export class UpdateRecipientAddressController {
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token.' })
   @ApiForbiddenResponse({ description: 'Requires ADMIN role.' })
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many geocoding requests from this IP. Retry after 60 seconds.',
+  })
   async handle(
     @Param('recipientId') recipientId: string,
     @Param('addressId') addressId: string,

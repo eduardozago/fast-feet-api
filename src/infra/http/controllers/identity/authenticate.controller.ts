@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   UsePipes,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import z from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
@@ -17,6 +18,7 @@ import {
   ApiCreatedResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
 import { AuthenticateDto } from '../../swagger/dtos/identity/authenticate.dto'
@@ -33,6 +35,7 @@ type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 @Controller()
 @Public()
 @UsePipes(new ZodValidationPipe(authenticateBodySchema))
+@Throttle({ default: { ttl: 60000, limit: 10 } })
 export class AuthenticateController {
   constructor(private authenticateUseCase: AuthenticateUseCase) {}
 
@@ -51,6 +54,9 @@ export class AuthenticateController {
     description: 'Invalid request body or validation error.',
   })
   @ApiUnauthorizedResponse({ description: 'Email or password is incorrect.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many login attempts. Retry after 60 seconds.',
+  })
   async handle(@Body() body: AuthenticateBodySchema) {
     const { email, password } = body
 

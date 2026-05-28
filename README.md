@@ -59,7 +59,7 @@ Fast Feet API manages the full lifecycle of package deliveries — from account 
 - **Delivery lifecycle** — strict status flow: `CREATED → ASSIGNED → IN_TRANSIT → COMPLETED`, with clear admin/courier ownership at each transition
 - **Proof of delivery** — couriers complete deliveries by submitting receiver evidence, optional GPS coordinates, and a proof image URL reference
 - **Nearby deliveries** — couriers query their own pending deliveries within a configurable radius (km) using the **Haversine formula** and paginated results
-- **Role-based access control** — global `JwtAuthGuard` + `RolesGuard`; admins manage the platform, couriers act only on their own deliveries
+- **Role-based access control** — global `JwtAuthGuard` + `RolesGuard`; admins manage the platform, couriers act only on their own deliveries; account creation is restricted to admins
 - **Interactive API documentation** — OpenAPI schema generated from NestJS Swagger decorators and rendered with Scalar
 - **Production deployment** — containerized API deployed to Google Cloud Run with GitHub Actions, Artifact Registry, Secret Manager, and keyless authentication
 - **Safe migration workflow** — database migrations run as a separate release task before the API revision is deployed
@@ -109,6 +109,24 @@ Symmetric HS256 requires sharing the secret with every service that validates to
 
 Argon2id was selected over bcrypt/scrypt because it is the winner of the Password Hashing Competition and is resistant to both GPU brute-force and side-channel attacks. The cost parameters (memory cost, time cost) are explicitly configured rather than left at defaults.
 
+### Rate limiting
+
+Rate limiting is applied selectively based on threat model rather than uniformly across all routes.
+
+**`POST /sessions` — 10 requests / 60 s per IP**
+
+This is the only public endpoint in the API — it requires no authentication. Without throttling, an attacker can run a credential-stuffing or brute-force campaign with no cost. Argon2id raises the CPU cost per attempt, but does not prevent the attempts themselves. A limit of 10 per minute blocks automated attacks while remaining completely transparent to legitimate users (a human cannot physically exceed this threshold).
+
+**`POST /recipients/:id/addresses` and `PUT /recipients/:id/addresses/:id` — 20 requests / 60 s per IP**
+
+Both endpoints trigger an outbound geocoding request to Nominatim/OpenStreetMap, which enforces a strict 1 req/sec policy. An admin bulk-creating or re-geocoding many addresses in quick succession from a single client could exhaust this limit and cause the server's IP to be temporarily blocked. Throttling at 20 per minute per IP provides a practical cap without affecting normal operational workflows, where address creation happens one at a time.
+
+**All other endpoints — no specific limit (200 req / 60 s global baseline)**
+
+Every other route requires a valid JWT. The authentication layer already prevents unauthenticated access; rate limiting on top adds little security value and introduces unnecessary overhead. The global baseline of 200/minute acts as a lightweight DoS safety net only.
+
+**Trade-off**: per-IP throttling on the geocoding endpoints does not fully protect Nominatim when many authenticated clients hit the API concurrently — their outbound requests all originate from the same server IP. A production system would pair this with a server-side geocoding request queue (e.g. a sliding-window semaphore) to enforce the 1 req/sec constraint globally, regardless of how many API clients are active simultaneously.
+
 ### Haversine formula in the application layer
 
 The nearby deliveries feature (`GET /couriers/me/deliveries/nearby`) calculates distances using the Haversine formula in a custom `Coordinate` value object rather than relying on a PostGIS extension or database-level geospatial functions. **Trade-off**: the current approach filters deliveries with a latitude/longitude bounding box first, then applies exact distance validation in the repository. This is pragmatic for moderate data volumes. For a production system at scale, migrating the `recipient_addresses` table to PostGIS and using `ST_DWithin` would be the right move.
@@ -132,6 +150,16 @@ The implementation intentionally separates runtime validation from documentation
 - **Scalar** consumes the generated JSON spec and provides a clean interface for exploring and testing endpoints.
 
 **Trade-off:** Zod and Swagger DTOs duplicate some request shape definitions. This is acceptable here because Zod remains the source of runtime validation, while explicit Swagger classes keep the public contract readable and presentation-focused. In a larger production codebase, this could be reduced with a schema-to-OpenAPI generation strategy.
+
+### Bootstrap admin via environment variables
+
+`POST /accounts` requires an authenticated `ADMIN`, which raises a classic chicken-and-egg problem: who creates the very first admin? Three common alternatives were considered:
+
+1. **A public `/setup` endpoint** that is active only when no admin exists — introduces a race condition window and an extra endpoint that must be disabled post-setup.
+2. **A CLI command** (`pnpm bootstrap-admin`) — requires direct shell access to the container, which is not available in Cloud Run.
+3. **Environment-variable bootstrap on startup** — `BootstrapAdminService` reads `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` on `OnApplicationBootstrap`. If both are set and the account does not yet exist, the first admin is provisioned using `CreateAccountUseCase`. If the account already exists the service is a no-op (safe across Cloud Run cold starts and scale-out events).
+
+Option 3 was chosen because it is declarative, works naturally with the existing secret injection mechanism (GCP Secret Manager → Cloud Run env vars), requires no extra HTTP surface, and mirrors the approach used by production products such as Grafana and Gitea. Once the admin exists, the vars are simply unset or omitted — no code change needed.
 
 ### Cloud Run deployment with release-safe migrations
 
@@ -221,7 +249,7 @@ The runtime image contains only compiled code and production dependencies, while
 
 GitHub authenticates to GCP through **Workload Identity Federation**, exchanging short-lived OIDC credentials instead of storing a service account key in repository secrets. The deployment service account is scoped to the required responsibilities: pushing images, deploying Cloud Run services/jobs, acting as the runtime service account, and accessing deployment secrets.
 
-For the full infrastructure setup guide — including GCP prerequisites, IAM configuration, Workload Identity Federation setup, GitHub secrets, and rollback procedures — see [docs/deployment.md](docs/deployment.md).
+For the full infrastructure setup guide — including GCP prerequisites, IAM configuration, Workload Identity Federation setup, GitHub secrets, first-admin provisioning, and rollback procedures — see [docs/deployment.md](docs/deployment.md).
 
 ---
 
@@ -229,11 +257,11 @@ For the full infrastructure setup guide — including GCP prerequisites, IAM con
 
 ### Identity
 
-| Method  | Path                 | Auth   | Role | Description                |
-| ------- | -------------------- | ------ | ---- | -------------------------- |
-| `POST`  | `/accounts`          | Public | —    | Create an account          |
-| `POST`  | `/sessions`          | Public | —    | Authenticate (returns JWT) |
-| `PATCH` | `/accounts/password` | JWT    | Any  | Change own password        |
+| Method  | Path                 | Auth   | Role  | Description                |
+| ------- | -------------------- | ------ | ----- | -------------------------- |
+| `POST`  | `/accounts`          | JWT    | ADMIN | Create an account          |
+| `POST`  | `/sessions`          | Public | —     | Authenticate (returns JWT) |
+| `PATCH` | `/accounts/password` | JWT    | Any   | Change own password        |
 
 ### Couriers
 
@@ -335,10 +363,10 @@ pnpm install
 
 # 3. Set up environment variables
 cp .env.example .env
-# Edit .env and fill in:
+# Edit .env and fill in the required values:
 #   JWT_PRIVATE_KEY  — base64-encoded RS256 private key
 #   JWT_PUBLIC_KEY   — base64-encoded RS256 public key
-#   NOMINATIM_API_URL and NOMINATIM_API_USER_AGENT (optional, defaults provided)
+#   NOMINATIM_API_URL and NOMINATIM_API_USER_AGENT (defaults provided)
 
 # 4. Start the database
 docker compose up -d
@@ -347,8 +375,14 @@ docker compose up -d
 pnpm prisma generate
 pnpm prisma migrate deploy
 
-# 6. (Optional) Seed demo data
+# 6a. Seed demo data (recommended for local development)
+#     Creates admin + courier accounts, recipients, and deliveries at all lifecycle stages.
 pnpm db:seed
+
+# 6b. Or provision just the first admin via environment variables (mirrors production flow):
+#     Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD in .env, then:
+pnpm start:dev
+# BootstrapAdminService creates the admin on first startup, then becomes a no-op.
 
 # 7. Start the development server
 pnpm start:dev
@@ -431,7 +465,7 @@ pnpm test:cov
 
 ### Business Rules
 
-- [x] Only admins can register couriers, manage recipients, create deliveries, assign couriers, and delete deliveries
+- [x] Only admins can create accounts, register couriers, manage recipients, create deliveries, assign couriers, and delete deliveries
 - [x] Only the assigned courier can pick up and complete a delivery
 - [x] A delivery can only be deleted when its status is `CREATED`
 - [x] A delivery must be linked to a recipient and a valid recipient address
@@ -454,6 +488,7 @@ pnpm test:cov
 - [x] Secrets managed through Google Secret Manager and keyless GitHub → GCP authentication
 - [x] Input validation at the HTTP boundary using Zod schemas
 - [x] OpenAPI contract generated from annotated controllers, DTOs, and response models
+- [x] Rate limiting on public and geocoding endpoints via `@nestjs/throttler`
 
 ---
 
