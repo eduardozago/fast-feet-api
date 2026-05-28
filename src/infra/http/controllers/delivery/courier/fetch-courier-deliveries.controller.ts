@@ -1,0 +1,129 @@
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Query,
+  Req,
+} from '@nestjs/common'
+import { FetchCourierDeliveriesUseCase } from '@/domain/delivery/application/use-cases/courier/fetch-courier-deliveries'
+import { z } from 'zod'
+import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
+import { CourierNotFoundError } from '@/domain/delivery/application/use-cases/courier/errors/courier-not-found-error'
+import { CourierDeliveryDetailsPresenter } from '@/infra/http/presenters/courier-delivery-details-presenter'
+import { Roles } from '@/infra/auth/roles.decorator'
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger'
+import { CourierDeliveriesListResponse } from '../../../swagger/responses/courier-deliveries-list.response'
+
+const fetchCourierDeliveriesQuerySchema = z.object({
+  status: z.enum(['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED']).optional(),
+  page: z.coerce
+    .number({
+      message: 'page must be a valid number.',
+    })
+    .int({ message: 'page must be an integer.' })
+    .positive({ message: 'page must be greater than 0.' })
+    .default(1),
+  limit: z.coerce
+    .number({
+      message: 'limit must be a valid number.',
+    })
+    .int({ message: 'limit must be an integer.' })
+    .positive({ message: 'limit must be greater than 0.' })
+    .max(100, { message: 'limit must be less than or equal to 100.' })
+    .default(20),
+})
+
+type FetchCourierDeliveriesQuerySchema = z.infer<
+  typeof fetchCourierDeliveriesQuerySchema
+>
+
+@ApiTags('Couriers')
+@ApiBearerAuth('JWT')
+@Controller()
+export class FetchCourierDeliveriesController {
+  constructor(
+    private fetchCourierDeliveriesUseCase: FetchCourierDeliveriesUseCase,
+  ) {}
+
+  @Get('/couriers/me/deliveries')
+  @Roles('WORKER')
+  @ApiOperation({
+    summary: 'List my deliveries',
+    description:
+      'Retrieve a paginated list of deliveries assigned to the authenticated courier. Results can be filtered by delivery status. Requires `WORKER` role.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['CREATED', 'ASSIGNED', 'IN_TRANSIT', 'COMPLETED'],
+    description: 'Filter deliveries by status. Omit to return all statuses.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (1-based). Defaults to 1.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Maximum results per page. Defaults to 20, max 100.',
+    example: 20,
+  })
+  @ApiOkResponse({
+    description: 'List of deliveries for the authenticated courier.',
+    type: CourierDeliveriesListResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token.' })
+  @ApiForbiddenResponse({ description: 'Requires WORKER role.' })
+  @ApiNotFoundResponse({
+    description: 'No courier profile linked to the authenticated account.',
+  })
+  async handle(
+    @Req() req: { user: UserPayload },
+    @Query(new ZodValidationPipe(fetchCourierDeliveriesQuerySchema))
+    query: FetchCourierDeliveriesQuerySchema,
+  ) {
+    const accountId = req.user.sub
+    const { status, page, limit } = query
+
+    const result = await this.fetchCourierDeliveriesUseCase.execute({
+      accountId,
+      status,
+      page,
+      limit,
+    })
+
+    if (result.isLeft()) {
+      const error = result.value
+
+      switch (error.constructor) {
+        case CourierNotFoundError:
+          throw new NotFoundException(error.message)
+        default:
+          throw new BadRequestException(error.message)
+      }
+    }
+
+    const deliveries = result.value.deliveries.map((delivery) =>
+      CourierDeliveryDetailsPresenter.toHTTP(delivery),
+    )
+
+    return {
+      deliveries,
+    }
+  }
+}

@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Identity
+
+enum AccountRole {
+  ADMIN  @map("admin")
+  WORKER @map("worker")
+
+  @@map("account_role")
+}
+
+model Account {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  role      AccountRole
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime?   @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
+// Delivery
+
+model Courier {
+  id        String    @id @default(uuid())
+  accountId String    @unique @map("account_id")
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  deliveries        Delivery[]
+  proofOfDeliveries ProofOfDelivery[]
+
+  @@map("couriers")
+}
+
+enum IdentificationType {
+  PERSONAL_ID @map("personal_id")
+  TAX_ID      @map("tax_id")
+  PASSPORT    @map("passport")
+  COMPANY_ID  @map("company_id")
+  OTHER       @map("other")
+
+  @@map("identification_type")
+}
+
+model Recipient {
+  id                     String             @id @default(uuid())
+  name                   String
+  identityDocumentType   IdentificationType @map("identity_document_type")
+  identityDocumentNumber String             @map("identity_document_number")
+  identityIssuingCountry String             @map("identity_issuing_country")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime?          @updatedAt @map("updated_at")
+
+  addresses RecipientAddress[]
+
+  deliveries Delivery[]
+
+  @@map("recipients")
+}
+
+model RecipientAddress {
+  id           String    @id @default(uuid())
+  recipientId  String    @map("recipient_id")
+  street       String
+  number       String
+  neighborhood String
+  complement   String?
+  city         String
+  state        String
+  country      String
+  postalCode   String    @map("postal_code")
+  latitude     Decimal   @db.Decimal(8, 6)
+  longitude    Decimal   @db.Decimal(9, 6)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  recipient  Recipient  @relation(fields: [recipientId], references: [id])
+  deliveries Delivery[]
+
+  @@map("recipient_addresses")
+}
+
+enum DeliveryStatus {
+  CREATED    @map("created")
+  ASSIGNED   @map("assigned")
+  IN_TRANSIT @map("in_transit")
+  COMPLETED  @map("completed")
+
+  @@map("delivery_status")
+}
+
+enum RecipientRelationship {
+  RECIPIENT     @map("recipient")
+  FAMILY_MEMBER @map("family_member")
+  DOORMAN       @map("doorman")
+  RECEPTIONIST  @map("receptionist")
+  NEIGHBOR      @map("neighbor")
+  OTHER         @map("other")
+
+  @@map("recipient_relationship")
+}
+
+enum ProofType {
+  DOCUMENT  @map("document")
+  PHOTO     @map("photo")
+  SIGNATURE @map("signature")
+  MANUAL    @map("manual")
+
+  @@map("proof_type")
+}
+
+enum LocationValidationStatus {
+  WITHIN_RANGE @map("within_range")
+  OUT_OF_RANGE @map("out_of_range")
+  UNAVAILABLE  @map("unavailable")
+
+  @@map("location_validation_status")
+}
+
+model Delivery {
+  id                 String         @id @default(uuid())
+  courierId          String?        @map("courier_id")
+  recipientId        String         @map("recipient_id")
+  recipientAddressId String         @map("recipient_address_id")
+  status             DeliveryStatus @default(CREATED)
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime?      @updatedAt @map("updated_at")
+
+  courier          Courier?         @relation(fields: [courierId], references: [id])
+  recipient        Recipient        @relation(fields: [recipientId], references: [id])
+  recipientAddress RecipientAddress @relation(fields: [recipientAddressId], references: [id])
+  proofOfDelivery  ProofOfDelivery?
+
+  @@map("deliveries")
+}
+
+model ProofOfDelivery {
+  id                          String                   @id @default(uuid())
+  deliveryId                  String                   @unique @map("delivery_id")
+  courierId                   String                   @map("courier_id")
+  receivedByName              String                   @map("received_by_name")
+  receivedByDocument          String?                  @map("received_by_document")
+  recipientRelationship       RecipientRelationship    @map("recipient_relationship")
+  proofType                   ProofType                @map("proof_type")
+  proofImageUrl               String?                  @map("proof_image_url")
+  latitude                    Decimal?                 @db.Decimal(8, 6)
+  longitude                   Decimal?                 @db.Decimal(9, 6)
+  distanceFromDestinationInKm Decimal?                 @map("distance_from_destination_in_km")
+  locationValidationStatus    LocationValidationStatus @map("location_validation_status")
+  documentMatchesRecipient    Boolean                  @map("document_matches_recipient")
+  notes                       String?
+  createdAt                   DateTime                 @default(now()) @map("created_at")
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id])
+  courier  Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("proofs_of_delivery")
+}
